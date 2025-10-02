@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
-import { ArrowLeftIcon } from "@/components/icons"
+// import { ArrowLeftIcon } from "@/components/icons"
 import Link from "next/link"
 
 export default function CreateStudioPage() {
@@ -49,7 +49,7 @@ export default function CreateStudioPage() {
               href="/create"
               className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
             >
-              <ArrowLeftIcon className="w-4 h-4" />
+              {/* <ArrowLeftIcon className="w-4 h-4" /> */}
               Back to Create
             </Link>
 
