@@ -9,11 +9,11 @@ export function MobileNav() {
   const pathname = usePathname()
 
   const navItems = [
-    { href: "/", icon: HomeIcon, label: "Home" },
-    { href: "/reels", icon: ReelsIcon, label: "Reels" },
-    { href: "/create", icon: PlusIcon, label: "Create" },
-    { href: "/notifications", icon: BellIcon, label: "Notifications" },
-    { href: "/profile", icon: UserIcon, label: "Profile" },
+    { href: "/dashboard", icon: HomeIcon, label: "Home" },
+    { href: "/dashboard/reels", icon: ReelsIcon, label: "Reels" },
+    { href: "/dashboard/create", icon: PlusIcon, label: "Create" },
+    { href: "/dashboard/notifications", icon: BellIcon, label: "Notifications" },
+    { href: "/dashboard/profile", icon: UserIcon, label: "Profile" },
   ]
 
   return (

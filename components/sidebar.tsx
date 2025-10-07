@@ -18,20 +18,20 @@ export function Sidebar() {
   const pathname = usePathname()
 
   const navItems = [
-    { href: "/", icon: HomeIcon, label: "Home" },
-    { href: "/studios", icon: CompassIcon, label: "Studios" },
-    { href: "/trending", icon: TrendingIcon, label: "Trending" },
-    { href: "/jobs", icon: BriefcaseIcon, label: "Jobs" },
-    { href: "/messages", icon: MessageIcon, label: "Messages" },
-    { href: "/saved", icon: BookmarkIcon, label: "Saved" },
-    { href: "/portfolio", icon: GridIcon, label: "My Portfolio" },
+    { href: "/dashboard", icon: HomeIcon, label: "Home" },
+    { href: "/dashboard/studios", icon: CompassIcon, label: "Studios" },
+    { href: "/dashboard/trending", icon: TrendingIcon, label: "Trending" },
+    { href: "/dashboard/jobs", icon: BriefcaseIcon, label: "Jobs" },
+    { href: "/dashboard/messages", icon: MessageIcon, label: "Messages" },
+    { href: "/dashboard/saved", icon: BookmarkIcon, label: "Saved" },
+    { href: "/dashboard/portfolio", icon: GridIcon, label: "My Portfolio" },
   ]
 
   return (
     <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 border-r border-border bg-card flex-col z-50">
       {/* Logo */}
       <Link
-        href="/"
+        href="/dashboard"
         className="flex items-center gap-3 h-16 px-6 border-b border-border hover:bg-secondary/50 transition-colors"
       >
         <BlueprintIcon className="w-8 h-8 text-primary" />
