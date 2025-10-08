@@ -1,5 +1,5 @@
-// Simple authentication utilities
-// In a real app, this would integrate with your auth provider
+// Authentication utilities - now integrated with Redux
+// This file provides backward compatibility during migration
 
 export interface User {
   id: string
@@ -9,7 +9,7 @@ export interface User {
   avatar?: string
 }
 
-// Mock authentication state
+// Mock authentication state (for backward compatibility)
 let currentUser: User | null = null
 
 export function setCurrentUser(user: User | null) {
@@ -21,11 +21,18 @@ export function getCurrentUser(): User | null {
 }
 
 export function isAuthenticated(): boolean {
+  // Check both local state and localStorage for backward compatibility
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('blueprint_auth_token')
+    return currentUser !== null || !!token
+  }
   return currentUser !== null
 }
 
-// Mock login function
+// Mock login function (deprecated - use Redux instead)
 export function login(email: string, password: string): Promise<User> {
+  console.warn('Deprecated: Use Redux useLoginMutation hook instead of this function')
+  
   return new Promise((resolve, reject) => {
     // Simulate API call
     setTimeout(() => {
@@ -38,6 +45,12 @@ export function login(email: string, password: string): Promise<User> {
           avatar: "/placeholder-user.jpg"
         }
         setCurrentUser(user)
+        
+        // Store token in localStorage for Redux compatibility
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('blueprint_auth_token', 'mock_jwt_token')
+        }
+        
         resolve(user)
       } else {
         reject(new Error("Invalid credentials"))
@@ -46,18 +59,27 @@ export function login(email: string, password: string): Promise<User> {
   })
 }
 
-// Mock logout function
+// Mock logout function (deprecated - use Redux instead)
 export function logout(): void {
+  console.warn('Deprecated: Use Redux logout action instead of this function')
+  
   setCurrentUser(null)
+  
+  // Remove token from localStorage
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('blueprint_auth_token')
+  }
 }
 
-// Mock register function
+// Mock register function (deprecated - use Redux instead)
 export function register(userData: {
   fullName: string
   username: string
   email: string
   password: string
 }): Promise<User> {
+  console.warn('Deprecated: Use Redux useRegisterMutation hook instead of this function')
+  
   return new Promise((resolve, reject) => {
     // Simulate API call
     setTimeout(() => {
@@ -70,6 +92,12 @@ export function register(userData: {
           avatar: "/placeholder-user.jpg"
         }
         setCurrentUser(user)
+        
+        // Store token in localStorage for Redux compatibility
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('blueprint_auth_token', 'mock_jwt_token_new_user')
+        }
+        
         resolve(user)
       } else {
         reject(new Error("Invalid registration data"))

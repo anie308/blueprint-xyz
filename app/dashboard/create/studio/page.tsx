@@ -11,16 +11,24 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
-// import { ArrowLeftIcon } from "@/components/icons"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle, CheckCircle } from "lucide-react"
+import { useCreateStudio } from "@/lib/hooks/useCreateStudio"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 
 export default function CreateStudioPage() {
+  const router = useRouter()
   const [studioName, setStudioName] = useState("")
   const [slug, setSlug] = useState("")
   const [description, setDescription] = useState("")
   const [rules, setRules] = useState("")
   const [category, setCategory] = useState("")
   const [isPublic, setIsPublic] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+
+  const { createStudio, isCreating, error: createError } = useCreateStudio()
 
   const handleNameChange = (name: string) => {
     setStudioName(name)
@@ -30,12 +38,49 @@ export default function CreateStudioPage() {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "")
     setSlug(generatedSlug)
+    setError(null)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle studio creation
-    console.log("[v0] Creating studio:", { studioName, slug, description, rules, category, isPublic })
+    setError(null)
+    setSuccess(false)
+
+    // Validation
+    if (!studioName.trim() || !description.trim() || !category) {
+      setError("Please fill in all required fields")
+      return
+    }
+
+    if (slug.length < 3) {
+      setError("Studio URL must be at least 3 characters long")
+      return
+    }
+
+    try {
+      const result = await createStudio({
+        name: studioName.trim(),
+        description: description.trim(),
+        slug: slug,
+        icon: "🏗️", // Default icon
+        private: isPublic,
+        // Additional fields that might be supported by the API
+        category: category,
+        rules: rules.trim() || undefined
+      })
+
+      if (result.success) {
+        setSuccess(true)
+        // Redirect to the new studio or dashboard after a short delay
+        setTimeout(() => {
+          router.push("/dashboard/studios")
+        }, 2000)
+      } else {
+        setError(result.error)
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.")
+    }
   }
 
   return (
@@ -62,6 +107,22 @@ export default function CreateStudioPage() {
             </div>
 
             <Card className="p-6">
+              {success && (
+                <Alert className="mb-6 border-green-200 bg-green-50">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    Studio created successfully! Redirecting to studios page...
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {error && (
+                <Alert variant="destructive" className="mb-6">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Studio Name */}
                 <div className="space-y-2">

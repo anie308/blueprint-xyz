@@ -5,6 +5,8 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import type React from "react"
 import { Suspense } from "react"
+import { ReduxProvider } from "@/lib/store/providers/ReduxProvider"
+import { AuthProvider } from "@/lib/store/providers/AuthProvider"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -26,7 +28,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans ${inter.variable} ${GeistMono.variable}`}>
-        <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+        <ReduxProvider>
+          <AuthProvider>
+            <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+          </AuthProvider>
+        </ReduxProvider>
         <Analytics />
       </body>
     </html>

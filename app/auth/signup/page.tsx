@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { AuthPageWrapper } from "@/components/auth/auth-page-wrapper"
 import { AuthForm, PasswordInput, PasswordRequirements } from "@/components/auth/auth-form"
 import { useRouter } from "next/navigation"
-import { register } from "@/lib/auth"
+import { useAuthService } from "@/lib/services/authService"
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -22,7 +22,9 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const { register } = useAuthService()
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -31,19 +33,26 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
     
     try {
-      await register({
+      const result = await register({
         fullName: formData.fullName,
         username: formData.username,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        confirmPassword: formData.confirmPassword
       })
-      // Redirect to dashboard after successful registration
-      router.push("/dashboard")
+      
+      if (result.success) {
+        // Redirect to dashboard after successful registration
+        router.push("/dashboard")
+      } else {
+        setError(result.error || "Registration failed")
+      }
     } catch (error) {
       console.error("Signup error:", error)
-      // TODO: Show error message to user
+      setError("An unexpected error occurred")
     } finally {
       setIsLoading(false)
     }
@@ -148,15 +157,21 @@ export default function SignupPage() {
           />
           <Label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed">
             I agree to the{" "}
-            <Link href="/terms" className="text-primary hover:text-primary/80">
+            <Link href="/terms" className="text-primary hover:text-primary/80" target="_blank" rel="noopener noreferrer">
               Terms of Service
             </Link>{" "}
             and{" "}
-            <Link href="/privacy" className="text-primary hover:text-primary/80">
+            <Link href="/privacy" className="text-primary hover:text-primary/80" target="_blank" rel="noopener noreferrer">
               Privacy Policy
             </Link>
           </Label>
         </div>
+
+        {error && (
+          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+            {error}
+          </div>
+        )}
 
         <Button
           type="submit"

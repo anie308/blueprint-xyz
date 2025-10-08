@@ -8,26 +8,34 @@ import { Label } from "@/components/ui/label"
 import { AuthPageWrapper } from "@/components/auth/auth-page-wrapper"
 import { AuthForm, PasswordInput } from "@/components/auth/auth-form"
 import { useRouter } from "next/navigation"
-import { login } from "@/lib/auth"
+import { useAuthService } from "@/lib/services/authService"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const { login } = useAuthService()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
     
     try {
-      await login(email, password)
-      // Redirect to dashboard after successful login
-      router.push("/dashboard")
+      const result = await login(email, password)
+      if (result.success) {
+        // Redirect to dashboard after successful login
+        console.log(result)
+        router.push("/dashboard");
+      } else {
+        setError(result.error || "Login failed")
+      }
     } catch (error) {
       console.error("Login error:", error)
-      // TODO: Show error message to user
+      setError("An unexpected error occurred")
     } finally {
       setIsLoading(false)
     }
@@ -84,6 +92,12 @@ export default function LoginPage() {
             Forgot password?
           </Link>
         </div>
+
+        {error && (
+          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+            {error}
+          </div>
+        )}
 
         <Button
           type="submit"

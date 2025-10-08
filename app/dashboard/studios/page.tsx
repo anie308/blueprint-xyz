@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
 import { MobileNav } from "@/components/mobile-nav"
@@ -5,59 +8,43 @@ import { StudioCard } from "@/components/studio-card"
 import { Input } from "@/components/ui/input"
 import { SearchIcon } from "@/components/icons"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useStudiosData } from "@/lib/hooks/useStudiosData"
+import { StudiosGridSkeleton, SearchSkeleton } from "@/components/studios/LoadingStates"
+import { StudiosError } from "@/components/studios/ErrorStates"
+import { StudiosEmpty } from "@/components/studios/EmptyStates"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 
 export default function StudiosPage() {
-  const studios = [
-    {
-      name: "Sustainable Housing",
-      slug: "sustainable-housing",
-      description: "Discussing eco-friendly design, passive houses, and green building materials",
-      members: 12400,
-      posts: 3200,
-      icon: "🌱",
-    },
-    {
-      name: "Brutalism Lovers",
-      slug: "brutalism-lovers",
-      description: "Celebrating raw concrete, bold forms, and brutalist architecture",
-      members: 8900,
-      posts: 2100,
-      icon: "🏛️",
-    },
-    {
-      name: "Residential Design",
-      slug: "residential-design",
-      description: "Home design, interior architecture, and living space innovations",
-      members: 15600,
-      posts: 4800,
-      icon: "🏠",
-    },
-    {
-      name: "Commercial Projects",
-      slug: "commercial-projects",
-      description: "Office buildings, retail spaces, and commercial architecture",
-      members: 9200,
-      posts: 1800,
-      icon: "🏢",
-    },
-    {
-      name: "Urban Planning",
-      slug: "urban-planning",
-      description: "City design, public spaces, and urban development strategies",
-      members: 11300,
-      posts: 2600,
-      icon: "🌆",
-    },
-    {
-      name: "Historic Preservation",
-      slug: "historic-preservation",
-      description: "Restoring and maintaining architectural heritage",
-      members: 6700,
-      posts: 1400,
-      icon: "🏰",
-    },
-  ]
+  const {
+    studios,
+    searchQuery,
+    currentPage,
+    sortBy,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
+    isLoading,
+    error,
+    handleSearch,
+    handleSort,
+    nextPage,
+    prevPage,
+    goToPage,
+    refetch
+  } = useStudiosData()
+
+  const [localSearchQuery, setLocalSearchQuery] = useState('')
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    handleSearch(localSearchQuery)
+  }
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalSearchQuery(e.target.value)
+  }
 
   return (
     <div className="min-h-screen">
@@ -74,25 +61,96 @@ export default function StudiosPage() {
             </div>
 
             {/* Search and Filter */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <div className="relative flex-1">
-                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input type="search" placeholder="Search studios..." className="pl-10 bg-secondary border-border" />
+            {isLoading ? (
+              <SearchSkeleton />
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <form onSubmit={handleSearchSubmit} className="relative flex-1">
+                  <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input 
+                    type="search" 
+                    placeholder="Search studios..." 
+                    className="pl-10 bg-secondary border-border"
+                    value={localSearchQuery}
+                    onChange={handleSearchChange}
+                  />
+                </form>
+                <Select value={sortBy} onValueChange={(value: 'popular' | 'newest' | 'oldest') => handleSort(value)}>
+                  <SelectTrigger className="w-32 bg-secondary border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="popular">Popular</SelectItem>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="oldest">Oldest</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button asChild>
+                  <Link href="/dashboard/create/studio">Create Studio</Link>
+                </Button>
               </div>
-              <Button variant="outline" className="rounded-sm bg-transparent">
-                Filter
-              </Button>
-              <Button asChild>
-                <Link href="/create/studio">Create Studio</Link>
-              </Button>
-            </div>
+            )}
 
             {/* Studios Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {studios.map((studio) => (
-                <StudioCard key={studio.slug} {...studio} />
-              ))}
-            </div>
+            {isLoading ? (
+              <StudiosGridSkeleton />
+            ) : error ? (
+              <StudiosError onRetry={refetch} />
+            ) : studios.length === 0 ? (
+              <StudiosEmpty searchQuery={searchQuery} />
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {studios.map((studio: any) => (
+                    <StudioCard key={studio._id || studio.slug} {...studio} />
+                  ))}
+                </div>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-8">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={prevPage}
+                      disabled={!hasPrevPage}
+                      className="gap-1"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous
+                    </Button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        const pageNum = i + 1
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => goToPage(pageNum)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {pageNum}
+                          </Button>
+                        )
+                      })}
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={nextPage}
+                      disabled={!hasNextPage}
+                      className="gap-1"
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </main>
       </div>

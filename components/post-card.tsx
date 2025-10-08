@@ -9,10 +9,10 @@ import Image from "next/image"
 
 interface PostCardProps {
   id: string
-  author: {
-    name: string
+  authorId: {
+    fullName: string
     username: string
-    avatar?: string
+    profilePictureUrl?: string
   }
   studio: string
   title: string
@@ -24,7 +24,7 @@ interface PostCardProps {
 }
 
 export function PostCard({
-  author,
+  authorId,
   studio,
   title,
   content,
@@ -52,20 +52,23 @@ export function PostCard({
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-border">
         <Avatar className="w-10 h-10 rounded-sm">
-          <AvatarImage src={author.avatar || "/placeholder.svg"} />
+          <AvatarImage src={authorId?.profilePictureUrl || "/placeholder.svg"} />
           <AvatarFallback className="rounded-sm bg-secondary text-foreground">
-            {author.name.slice(0, 2).toUpperCase()}
+            {authorId?.fullName?.slice(0, 2).toUpperCase() || "AN"}
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm truncate">{author.name}</span>
-            <Badge variant="secondary" className="text-xs font-mono rounded-sm">
-              {studio}
-            </Badge>
-          </div>
+         
+           <div className="flex items-center gap-2">
+           <span className="font-semibold text-sm truncate">{authorId?.fullName || "Anonymous"}</span>
+           { studio && ( <Badge variant="secondary" className="text-xs font-mono rounded-sm">
+             {studio}
+           </Badge>
+           )}
+         </div>
+         
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>@{author.username}</span>
+            <span>@{authorId?.username}</span>
             <span>•</span>
             <span>{timestamp}</span>
           </div>

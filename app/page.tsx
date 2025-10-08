@@ -5,9 +5,25 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { BlueprintIcon, ArrowRightIcon, PlayIcon, UsersIcon, GridIcon, MessageIcon, TrendingIcon } from "@/components/icons"
+import { useHomeData } from "@/lib/hooks/useHomeData"
+import { ProjectGallerySkeleton, TestimonialsSkeleton } from "@/components/home/LoadingStates"
+import { ProjectGalleryError, TestimonialsError, ErrorState } from "@/components/home/ErrorStates"
+import { ProjectGalleryEmpty, TestimonialsEmpty, TrendingEmpty } from "@/components/home/EmptyStates"
 
 export default function LandingPage() {
   const [isVisible, setIsVisible] = useState(false)
+  const { 
+    featuredProjects,
+    trendingContent,
+    featuredStudios,
+    isLoading, 
+    hasError, 
+    errors, 
+    isEmpty,
+    refetchProjects,
+    refetchTrending,
+    refetchStudios
+  } = useHomeData()
 
   useEffect(() => {
     setIsVisible(true)
@@ -199,6 +215,78 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Trending Section */}
+      <section className="py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+              What's Trending Now
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Discover the most engaging content from our community
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {isLoading ? (
+              <div className="col-span-full">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <Card key={index} className="group overflow-hidden">
+                      <div className="aspect-video bg-gradient-to-br from-primary/10 to-accent/10 relative overflow-hidden">
+                        <div className="animate-pulse bg-muted w-full h-full" />
+                      </div>
+                      <CardContent className="p-4">
+                        <div className="animate-pulse bg-muted h-4 w-3/4 mb-2 rounded" />
+                        <div className="animate-pulse bg-muted h-3 w-1/2 rounded" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ) : errors.trending ? (
+              <div className="col-span-full">
+                <ErrorState
+                  title="Unable to load trending content"
+                  message="We couldn't fetch the latest trending content. Please try again."
+                  onRetry={refetchTrending}
+                />
+              </div>
+            ) : trendingContent.length === 0 ? (
+              <div className="col-span-full">
+                <TrendingEmpty />
+              </div>
+            ) : (
+              trendingContent.slice(0, 6).map((item) => (
+                <Card key={item._id} className="group overflow-hidden hover:shadow-lg transition-all duration-300">
+                  <div className="aspect-video bg-gradient-to-br from-primary/10 to-accent/10 relative overflow-hidden">
+                    <img 
+                      src={item.images?.[0] || item.thumbnail || "/placeholder.jpg"} 
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300" />
+                    <div className="absolute top-2 right-2">
+                      <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
+                        {item.type || 'Post'}
+                      </span>
+                    </div>
+                  </div>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-foreground mb-1 line-clamp-2">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground">by {item.author?.fullName || item.author?.username}</p>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                      <span>{item.likes || 0} likes</span>
+                      <span>{item.comments || 0} comments</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Visual Gallery Section */}
       <section className="py-24 bg-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -212,26 +300,30 @@ export default function LandingPage() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              { title: "Sustainable Housing Complex", author: "Sarah Chen", image: "/modern-sustainable-architecture.jpg" },
-              { title: "Brutalist Office Building", author: "Marcus Rodriguez", image: "/modern-house-rendering.jpg" },
-              { title: "Modern Apartment Design", author: "Aisha Patel", image: "/modern-apartment.png" }
-            ].map((project, index) => (
-              <Card key={index} className="group overflow-hidden hover:shadow-lg transition-all duration-300">
-                <div className="aspect-video bg-gradient-to-br from-primary/10 to-accent/10 relative overflow-hidden">
-                  <img 
-                    src={project.image} 
-                    alt={project.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300" />
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-foreground mb-1">{project.title}</h3>
-                  <p className="text-sm text-muted-foreground">by {project.author}</p>
-                </CardContent>
-              </Card>
-            ))}
+            {isLoading ? (
+              <ProjectGallerySkeleton />
+            ) : errors.projects ? (
+              <ProjectGalleryError onRetry={refetchProjects} />
+            ) : featuredProjects.length === 0 ? (
+              <ProjectGalleryEmpty />
+            ) : (
+              featuredProjects.map((project) => (
+                <Card key={project._id} className="group overflow-hidden hover:shadow-lg transition-all duration-300">
+                  <div className="aspect-video bg-gradient-to-br from-primary/10 to-accent/10 relative overflow-hidden">
+                    <img 
+                      src={project.images?.[0] || "/placeholder.jpg"} 
+                      alt={project.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300" />
+                  </div>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-foreground mb-1">{project.title}</h3>
+                    <p className="text-sm text-muted-foreground">by {project.author?.fullName || project.author?.username}</p>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -264,26 +356,30 @@ export default function LandingPage() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="text-center">
-                <CardContent className="p-8">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full overflow-hidden">
-                    <img 
-                      src={testimonial.avatar} 
-                      alt={testimonial.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <blockquote className="text-muted-foreground mb-4 italic">
-                    "{testimonial.quote}"
-                  </blockquote>
-                  <div>
-                    <p className="font-semibold text-foreground">{testimonial.name}</p>
-                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {isLoading ? (
+              <TestimonialsSkeleton />
+            ) : (
+              testimonials.map((testimonial, index) => (
+                <Card key={index} className="text-center">
+                  <CardContent className="p-8">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full overflow-hidden">
+                      <img 
+                        src={testimonial.avatar} 
+                        alt={testimonial.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <blockquote className="text-muted-foreground mb-4 italic">
+                      "{testimonial.quote}"
+                    </blockquote>
+                    <div>
+                      <p className="font-semibold text-foreground">{testimonial.name}</p>
+                      <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -323,6 +419,16 @@ export default function LandingPage() {
                 <li><Link href="#" className="hover:text-foreground transition-colors">Careers</Link></li>
               </ul>
             </div>
+            
+            <div>
+              <h3 className="font-semibold text-foreground mb-4">Legal</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link></li>
+                <li><Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link></li>
+                <li><Link href="#" className="hover:text-foreground transition-colors">Cookie Policy</Link></li>
+                <li><Link href="#" className="hover:text-foreground transition-colors">Community Guidelines</Link></li>
+              </ul>
+            </div>
           </div>
           
           <div className="border-t border-border mt-8 pt-8 flex flex-col sm:flex-row justify-between items-center">
@@ -330,8 +436,8 @@ export default function LandingPage() {
               © 2024 Blueprint.xyz. All rights reserved.
             </p>
             <div className="flex gap-6 mt-4 sm:mt-0">
-              <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">Terms</Link>
-              <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
+              <Link href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms</Link>
+              <Link href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
             </div>
           </div>
         </div>

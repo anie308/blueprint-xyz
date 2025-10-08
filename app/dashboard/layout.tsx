@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation"
 import { useEffect, useState } from "react"
-import { isAuthenticated } from "@/lib/auth"
+import { useIsAuthenticated } from "@/lib/store/hooks"
 
 export default function DashboardLayout({
   children,
@@ -10,22 +10,22 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const [isLoading, setIsLoading] = useState(true)
-  const [isAuth, setIsAuth] = useState(false)
+  const isAuthenticated = useIsAuthenticated()
 
   useEffect(() => {
-    // Check authentication status
-    const checkAuth = () => {
-      const authenticated = isAuthenticated()
-      setIsAuth(authenticated)
+    // Small delay to allow Redux to initialize
+    const timer = setTimeout(() => {
       setIsLoading(false)
-      
-      if (!authenticated) {
-        redirect("/auth/login")
-      }
-    }
+    }, 100)
 
-    checkAuth()
+    return () => clearTimeout(timer)
   }, [])
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      redirect("/auth/login")
+    }
+  }, [isLoading, isAuthenticated])
 
   if (isLoading) {
     return (
@@ -38,7 +38,7 @@ export default function DashboardLayout({
     )
   }
 
-  if (!isAuth) {
+  if (!isAuthenticated) {
     return null // Will redirect to login
   }
 
