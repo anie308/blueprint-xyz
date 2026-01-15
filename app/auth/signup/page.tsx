@@ -35,11 +35,39 @@ export default function SignupPage() {
     setIsLoading(true)
     setError(null)
     
+    // Validate required fields
+    if (!formData.fullName || !formData.fullName.trim()) {
+      setError("Full name is required")
+      setIsLoading(false)
+      return
+    }
+    
+    // Validate fullName contains only letters and spaces
+    const fullNameRegex = /^[a-zA-Z\s]+$/
+    if (!fullNameRegex.test(formData.fullName.trim())) {
+      setError("Full name can only contain letters and spaces")
+      setIsLoading(false)
+      return
+    }
+    
+    if (!formData.username || !formData.username.trim()) {
+      setError("Username is required")
+      setIsLoading(false)
+      return
+    }
+    
+    if (!formData.email || !formData.email.trim()) {
+      setError("Email is required")
+      setIsLoading(false)
+      return
+    }
+    
     try {
+      console.log(formData)
       const result = await register({
-        fullName: formData.fullName,
-        username: formData.username,
-        email: formData.email,
+        fullName: formData.fullName.trim(),
+        username: formData.username.trim(),
+        email: formData.email.trim(),
         password: formData.password,
         confirmPassword: formData.confirmPassword
       })
@@ -50,9 +78,10 @@ export default function SignupPage() {
       } else {
         setError(result.error || "Registration failed")
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Signup error:", error)
-      setError("An unexpected error occurred")
+      const errorMessage = error?.data?.message || error?.message || "An unexpected error occurred"
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -62,7 +91,7 @@ export default function SignupPage() {
                          /[A-Z]/.test(formData.password) && 
                          /[a-z]/.test(formData.password) && 
                          /\d/.test(formData.password)
-  const isFormValid = formData.fullName && formData.username && formData.email && 
+  const isFormValid = formData.fullName.trim() && formData.username.trim() && formData.email.trim() && 
                      formData.password && formData.confirmPassword === formData.password && 
                      isPasswordValid && agreedToTerms
 
@@ -82,10 +111,17 @@ export default function SignupPage() {
             type="text"
             placeholder="John Doe"
             value={formData.fullName}
-            onChange={(e) => handleInputChange("fullName", e.target.value)}
+            onChange={(e) => {
+              // Only allow letters and spaces
+              const value = e.target.value.replace(/[^a-zA-Z\s]/g, '')
+              handleInputChange("fullName", value)
+            }}
             required
             className="h-11"
           />
+          <p className="text-xs text-muted-foreground">
+            Only letters and spaces are allowed
+          </p>
         </div>
 
         <div className="space-y-2">

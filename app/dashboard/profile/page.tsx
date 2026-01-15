@@ -22,7 +22,7 @@ export default function ProfilePage() {
   // Get current user (profile page shows current user's profile)
   const { data: userData, isLoading: isUserLoading, error: userError } = useGetMeQuery()
 
-  const user = (userData as any)?.data
+  const user = (userData as any)?.data?.user
 
   // Fetch user's projects
   const {

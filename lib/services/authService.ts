@@ -33,6 +33,7 @@ export class AuthService {
     username: string
     email: string
     password: string
+    confirmPassword: string
   }): Promise<{ success: boolean; error?: string }> {
     try {
       const result = await store.dispatch(api.endpoints.register.initiate(userData))
@@ -143,11 +144,31 @@ export const useAuthService = () => {
     confirmPassword: string
   }) => {
     try {
+      // Validate fullName before sending
+      if (!userData.fullName || !userData.fullName.trim()) {
+        return {
+          success: false,
+          error: "Full name is required"
+        }
+      }
+
+      // Validate fullName contains only letters and spaces
+      const fullNameRegex = /^[a-zA-Z\s]+$/
+      if (!fullNameRegex.test(userData.fullName.trim())) {
+        return {
+          success: false,
+          error: "Full name can only contain letters and spaces"
+        }
+      }
+
+      console.log(userData, "userdata")
+
       const result = await registerMutation({
-        fullName: userData.fullName,
-        username: userData.username,
-        email: userData.email,
-        password: userData.password
+        fullName: userData.fullName.trim(),
+        username: userData.username.trim(),
+        email: userData.email.trim(),
+        password: userData.password,
+        confirmPassword: userData.confirmPassword
       }).unwrap()
       
       if (result.success) {
@@ -161,7 +182,19 @@ export const useAuthService = () => {
         }
       }
     } catch (error: any) {
-      const errorMessage = error?.data?.message || error?.message || "Registration failed"
+      // Extract detailed error message from API response
+      let errorMessage = "Registration failed"
+      
+      if (error?.data?.message) {
+        errorMessage = error.data.message
+      } else if (error?.data?.details?.validationErrors) {
+        // Handle validation errors
+        const validationErrors = error.data.details.validationErrors
+        errorMessage = validationErrors.map((err: any) => err.message || `${err.field} is required`).join(", ")
+      } else if (error?.message) {
+        errorMessage = error.message
+      }
+      
       store.dispatch(registerFailure(errorMessage))
       return { 
         success: false, 
