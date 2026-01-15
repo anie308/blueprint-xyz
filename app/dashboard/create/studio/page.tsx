@@ -48,7 +48,13 @@ export default function CreateStudioPage() {
 
     // Validation
     if (!studioName.trim() || !description.trim() || !category) {
-      setError("Please fill in all required fields")
+      setError("Please fill in all required fields (Name, Description, and Category)")
+      return
+    }
+    
+    // Rules is required by API but can be empty string
+    if (rules === undefined || rules === null) {
+      setError("Studio Rules field is required")
       return
     }
 
@@ -61,12 +67,10 @@ export default function CreateStudioPage() {
       const result = await createStudio({
         name: studioName.trim(),
         description: description.trim(),
-        slug: slug,
-        icon: "🏗️", // Default icon
-        private: isPublic,
-        // Additional fields that might be supported by the API
+        slug: slug.trim(),
         category: category,
-        rules: rules.trim() || undefined
+        rules: rules.trim() || '', // API requires this field, even if empty
+        private: !isPublic // Hook expects private (true = private), but API expects isPrivate
       })
 
       if (result.success) {
@@ -91,7 +95,7 @@ export default function CreateStudioPage() {
         <main className="pb-20 md:pb-8">
           <div className="max-w-3xl mx-auto p-4 md:p-6">
             <Link
-              href="/create"
+              href="/dashboard/create"
               className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
             >
               {/* <ArrowLeftIcon className="w-4 h-4" /> */}
@@ -197,12 +201,13 @@ export default function CreateStudioPage() {
 
                 {/* Studio Rules */}
                 <div className="space-y-2">
-                  <Label htmlFor="rules">Studio Rules (Optional)</Label>
+                  <Label htmlFor="rules">Studio Rules *</Label>
                   <Textarea
                     id="rules"
                     value={rules}
                     onChange={(e) => setRules(e.target.value)}
                     placeholder="Set guidelines for your community members..."
+                    required
                     rows={4}
                     maxLength={1000}
                   />
@@ -252,7 +257,7 @@ export default function CreateStudioPage() {
                     Create Studio
                   </Button>
                   <Button type="button" variant="outline" className="flex-1 bg-transparent" asChild>
-                    <Link href="/create">Cancel</Link>
+                    <Link href="/dashboard/create">Cancel</Link>
                   </Button>
                 </div>
               </form>

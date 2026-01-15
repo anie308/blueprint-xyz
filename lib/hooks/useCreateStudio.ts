@@ -21,11 +21,12 @@ export function useCreateStudio() {
       const result = await createStudioMutation({
         name: studioData.name,
         description: studioData.description,
-        icon: studioData.icon,
         slug: studioData.slug,
-        category: studioData.category,
-        studioRules: studioData.rules,
-        isPrivate: studioData.private
+        category: studioData.category || '',
+        isPrivate: studioData.private !== undefined ? studioData.private : false,
+        studioRules: studioData.rules || '',
+        // Also send isPublic for backwards compatibility
+        isPublic: studioData.private === undefined ? true : !studioData.private
       }).unwrap()
 
       return { success: true, data: result }

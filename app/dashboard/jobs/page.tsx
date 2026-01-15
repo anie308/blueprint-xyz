@@ -1,154 +1,133 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import { Sidebar } from "@/components/sidebar"
+import { Header } from "@/components/header"
+import { MobileNav } from "@/components/mobile-nav"
 import { JobCard } from "@/components/job-card"
 import { FilterIcon, SearchIcon } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
+import { useGetJobsQuery } from "@/lib/store/api"
+import { ErrorState } from "@/components/dashboard/ErrorStates"
+import { EmptyState } from "@/components/dashboard/EmptyStates"
+import { BriefcaseIcon } from "lucide-react"
+import { formatDistanceToNow } from "date-fns"
 
 const jobTypes = ["All", "Full-time", "Part-time", "Contract", "Freelance", "Internship"]
 const experienceLevels = ["All", "Entry Level", "Mid Level", "Senior Level", "Lead", "Executive"]
 const locations = ["All", "Remote", "On-site", "Hybrid"]
-
-const mockJobs = [
-  {
-    id: "1",
-    title: "Senior Architect",
-    company: "Foster + Partners",
-    location: "London, UK",
-    type: "Full-time",
-    experience: "Senior Level",
-    salary: "$120k - $180k",
-    postedTime: "2 days ago",
-    description:
-      "We are seeking an experienced Senior Architect to lead major commercial and residential projects. You will work with a talented team on innovative sustainable designs.",
-    skills: ["Revit", "AutoCAD", "Sustainable Design", "BIM", "Project Management"],
-  },
-  {
-    id: "2",
-    title: "Architectural Designer",
-    company: "Zaha Hadid Architects",
-    location: "Remote",
-    type: "Contract",
-    experience: "Mid Level",
-    salary: "$80k - $110k",
-    postedTime: "1 week ago",
-    description:
-      "Join our design team to work on cutting-edge parametric architecture projects. Experience with computational design tools is essential.",
-    skills: ["Rhino", "Grasshopper", "3D Modeling", "Parametric Design"],
-  },
-  {
-    id: "3",
-    title: "Junior Architect",
-    company: "Bjarke Ingels Group",
-    location: "Copenhagen, Denmark",
-    type: "Full-time",
-    experience: "Entry Level",
-    salary: "$55k - $70k",
-    postedTime: "3 days ago",
-    description:
-      "Exciting opportunity for a recent graduate to join our award-winning team. You'll contribute to residential and mixed-use developments.",
-    skills: ["AutoCAD", "SketchUp", "Adobe Suite", "Model Making"],
-  },
-  {
-    id: "4",
-    title: "Lead Sustainable Design Architect",
-    company: "Perkins&Will",
-    location: "San Francisco, CA",
-    type: "Full-time",
-    experience: "Lead",
-    salary: "$140k - $200k",
-    postedTime: "5 days ago",
-    description:
-      "Lead our sustainability initiatives and mentor junior architects. LEED AP certification required. Focus on net-zero and regenerative design.",
-    skills: ["LEED", "Energy Modeling", "Passive Design", "Green Building", "Leadership"],
-  },
-  {
-    id: "5",
-    title: "Freelance Architectural Visualizer",
-    company: "MIR",
-    location: "Remote",
-    type: "Freelance",
-    experience: "Mid Level",
-    salary: "$60 - $100/hr",
-    postedTime: "1 day ago",
-    description:
-      "Create stunning photorealistic renderings for high-profile architectural projects. Portfolio showcasing residential and commercial work required.",
-    skills: ["3ds Max", "V-Ray", "Corona", "Photoshop", "Unreal Engine"],
-  },
-  {
-    id: "6",
-    title: "Architecture Intern",
-    company: "Gensler",
-    location: "New York, NY",
-    type: "Internship",
-    experience: "Entry Level",
-    postedTime: "4 days ago",
-    description:
-      "Summer internship program for architecture students. Gain hands-on experience across multiple project types and learn from industry leaders.",
-    skills: ["Revit", "AutoCAD", "Rendering", "Model Making"],
-  },
-]
 
 export default function JobsPage() {
   const [selectedType, setSelectedType] = useState("All")
   const [selectedExperience, setSelectedExperience] = useState("All")
   const [selectedLocation, setSelectedLocation] = useState("All")
   const [searchQuery, setSearchQuery] = useState("")
+  const [page, setPage] = useState(1)
 
-  const filteredJobs = mockJobs.filter((job) => {
-    const matchesType = selectedType === "All" || job.type === selectedType
-    const matchesExperience = selectedExperience === "All" || job.experience === selectedExperience
-    const matchesLocation =
-      selectedLocation === "All" ||
-      (selectedLocation === "Remote" && job.location === "Remote") ||
-      (selectedLocation === "On-site" && job.location !== "Remote") ||
-      (selectedLocation === "Hybrid" && job.location.includes("Hybrid"))
-    const matchesSearch =
-      searchQuery === "" ||
-      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.skills.some((skill) => skill.toLowerCase().includes(searchQuery.toLowerCase()))
-
-    return matchesType && matchesExperience && matchesLocation && matchesSearch
+  // Fetch jobs from API
+  const {
+    data: jobsData,
+    isLoading,
+    error,
+    refetch
+  } = useGetJobsQuery({
+    page,
+    limit: 20,
+    search: searchQuery || undefined,
+    sort: 'newest'
+  }, {
+    pollingInterval: 300000, // 5 minutes
+    refetchOnFocus: true,
+    refetchOnReconnect: true
   })
 
+  const jobs = (jobsData as any)?.data || []
+
+  // Transform API job data to JobCard props
+  const transformedJobs = useMemo(() => {
+    return jobs.map((job: any) => {
+      const salaryStr = job.salary
+        ? `${job.salary.currency || '$'}${job.salary.min?.toLocaleString() || ''}${job.salary.max ? ` - ${job.salary.max.toLocaleString()}` : ''}`
+        : undefined
+
+      return {
+        id: job._id || job.id,
+        title: job.title,
+        company: job.company || job.studio?.name || 'Unknown',
+        companyLogo: job.studio?.logoUrl,
+        location: job.location || 'Location not specified',
+        type: job.type || 'Full-time',
+        experience: job.experience || 'Mid Level',
+        salary: salaryStr,
+        postedTime: job.createdAt ? formatDistanceToNow(new Date(job.createdAt), { addSuffix: true }) : 'Recently',
+        description: job.description || '',
+        skills: job.requirements || []
+      }
+    })
+  }, [jobs])
+
+  // Client-side filtering (can be moved to backend if needed)
+  const filteredJobs = useMemo(() => {
+    return transformedJobs.filter((job) => {
+      const matchesType = selectedType === "All" || job.type === selectedType
+      const matchesExperience = selectedExperience === "All" || job.experience === selectedExperience
+      const matchesLocation =
+        selectedLocation === "All" ||
+        (selectedLocation === "Remote" && job.location.toLowerCase().includes("remote")) ||
+        (selectedLocation === "On-site" && !job.location.toLowerCase().includes("remote")) ||
+        (selectedLocation === "Hybrid" && job.location.toLowerCase().includes("hybrid"))
+      const matchesSearch =
+        searchQuery === "" ||
+        job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        job.skills.some((skill: string) => skill.toLowerCase().includes(searchQuery.toLowerCase()))
+
+      return matchesType && matchesExperience && matchesLocation && matchesSearch
+    })
+  }, [transformedJobs, selectedType, selectedExperience, selectedLocation, searchQuery])
+
   return (
-    <div className="min-h-screen pb-20 md:pb-8">
-      {/* Header */}
-      <div className="border-b border-border bg-card sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Architecture Jobs</h1>
-              <p className="text-muted-foreground mt-1">
-                {filteredJobs.length} {filteredJobs.length === 1 ? "position" : "positions"} available
-              </p>
+    <div className="min-h-screen">
+      <Sidebar />
+      <div className="md:ml-64">
+        <Header />
+        <main className="pb-20 md:pb-8">
+          {/* Header */}
+          <div className="border-b border-border bg-card sticky top-16 z-40">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground">Architecture Jobs</h1>
+                  <p className="text-muted-foreground mt-1">
+                    {filteredJobs.length} {filteredJobs.length === 1 ? "position" : "positions"} available
+                  </p>
+                </div>
+                <Button className="gap-2" asChild>
+                  <Link href="/dashboard/create/job">
+                    <FilterIcon className="w-4 h-4" />
+                    Post a Job
+                  </Link>
+                </Button>
+              </div>
+
+              {/* Search */}
+              <div className="relative">
+                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search by title, company, or skills..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
-            <Button className="gap-2" asChild>
-              <Link href="/create/job">
-                <FilterIcon className="w-4 h-4" />
-                Post a Job
-              </Link>
-            </Button>
           </div>
 
-          {/* Search */}
-          <div className="relative">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search by title, company, or skills..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Filters Sidebar */}
           <aside className="lg:col-span-1">
@@ -235,28 +214,61 @@ export default function JobsPage() {
 
           {/* Job Listings */}
           <div className="lg:col-span-3 space-y-4">
-            {filteredJobs.length > 0 ? (
-              filteredJobs.map((job) => <JobCard key={job.id} {...job} />)
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No jobs found matching your criteria.</p>
-                <Button
-                  variant="outline"
-                  className="mt-4 bg-transparent"
-                  onClick={() => {
-                    setSelectedType("All")
-                    setSelectedExperience("All")
-                    setSelectedLocation("All")
-                    setSearchQuery("")
-                  }}
-                >
-                  Clear All Filters
-                </Button>
+            {isLoading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="border border-border rounded-sm bg-card p-6">
+                    <div className="flex items-start gap-4">
+                      <Skeleton className="w-12 h-12 rounded-sm" />
+                      <div className="flex-1 space-y-3">
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-2/3" />
+                        <div className="flex gap-2">
+                          <Skeleton className="h-6 w-20" />
+                          <Skeleton className="h-6 w-20" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
+            ) : error ? (
+              <ErrorState
+                title="Unable to load jobs"
+                message="We couldn't fetch the job listings. Please try again."
+                onRetry={() => refetch()}
+              />
+            ) : filteredJobs.length > 0 ? (
+              <>
+                {filteredJobs.map((job) => <JobCard key={job.id} {...job} />)}
+                {(jobsData as any)?.pagination?.hasNext && (
+                  <div className="text-center pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => setPage(prev => prev + 1)}
+                    >
+                      Load More
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <EmptyState
+                icon={BriefcaseIcon}
+                title="No jobs found"
+                description="No jobs match your current filters. Try adjusting your search criteria."
+                actionText="Clear Filters"
+                actionHref="#"
+              />
             )}
           </div>
         </div>
       </div>
+        </main>
+      </div>
+      <MobileNav />
     </div>
   )
 }

@@ -1,49 +1,56 @@
+"use client"
+
+import { useState, useMemo } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
 import { MobileNav } from "@/components/mobile-nav"
 import { PostCard } from "@/components/post-card"
 import { ProjectCard } from "@/components/project-card"
+import { ReelCard } from "@/components/reel-card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
 import { BookmarkIcon } from "@/components/icons"
+import { useGetSavedItemsQuery } from "@/lib/store/api"
+import { useGetProjectsQuery, useGetPostsQuery, useGetReelsQuery } from "@/lib/store/api"
+import { ErrorState } from "@/components/dashboard/ErrorStates"
+import { EmptyState } from "@/components/dashboard/EmptyStates"
+import { formatDistanceToNow } from "date-fns"
 
 export default function SavedPage() {
-  const savedPosts = [
-    {
-      id: "1",
-      author: {
-        name: "Sarah Chen",
-        username: "sarahchen",
-        avatar: "/architect-woman.png",
-      },
-      studio: "Sustainable Housing",
-      title: "Passive House Design: My Latest Project in Copenhagen",
-      content:
-        "Just completed the design phase for a 12-unit passive house complex. The challenge was balancing thermal efficiency with the client's desire for large windows.",
-      image: "/modern-sustainable-architecture.jpg",
-      appreciations: 234,
-      comments: 45,
-      timestamp: "2h ago",
-    },
-  ]
+  const [activeTab, setActiveTab] = useState<"posts" | "projects" | "reels">("posts")
 
-  const savedProjects = [
-    {
-      id: "1",
-      title: "Sustainable Community Center",
-      category: "Public Architecture",
-      thumbnail: "/modern-sustainable-building.jpg",
-      likes: 456,
-      views: 2300,
-    },
-    {
-      id: "2",
-      title: "Modern Residential Complex",
-      category: "Residential",
-      thumbnail: "/modern-house-rendering.jpg",
-      likes: 789,
-      views: 4100,
-    },
-  ]
+  // Fetch saved items from API
+  const {
+    data: savedData,
+    isLoading: isSavedLoading,
+    error: savedError,
+    refetch: refetchSaved
+  } = useGetSavedItemsQuery({
+    page: 1,
+    limit: 100
+  }, {
+    pollingInterval: 300000, // 5 minutes
+    refetchOnFocus: true,
+    refetchOnReconnect: true
+  })
+
+  const savedItems = (savedData as any)?.data || []
+
+  // Separate saved items by type
+  const savedPosts = savedItems.filter((item: any) => item.entityType === 'Post')
+  const savedProjects = savedItems.filter((item: any) => item.entityType === 'Project')
+  const savedReels = savedItems.filter((item: any) => item.entityType === 'Reel')
+
+  // Fetch actual post/project/reel data for saved items
+  // Note: This is a simplified approach. In production, you might want to fetch all at once
+  const postIds = savedPosts.map((item: any) => item.entityId)
+  const projectIds = savedProjects.map((item: any) => item.entityId)
+  const reelIds = savedReels.map((item: any) => item.entityId)
+
+  // For now, we'll use the saved items data directly
+  // In a real implementation, you'd fetch the full entity data
+  const isLoading = isSavedLoading
+  const error = savedError
 
   return (
     <div className="min-h-screen">
@@ -85,23 +92,120 @@ export default function SavedPage() {
               </TabsList>
 
               <TabsContent value="posts">
-                <div className="space-y-4">
-                  {savedPosts.map((post) => (
-                    <PostCard key={post.id} {...post} />
-                  ))}
-                </div>
+                {isLoading ? (
+                  <div className="space-y-4">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="border border-border rounded-sm p-6">
+                        <div className="flex items-start gap-4">
+                          <Skeleton className="w-12 h-12 rounded-full" />
+                          <div className="flex-1 space-y-3">
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-2/3" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : error ? (
+                  <ErrorState
+                    title="Unable to load saved posts"
+                    message="We couldn't fetch your saved posts. Please try again."
+                    onRetry={() => refetchSaved()}
+                  />
+                ) : savedPosts.length > 0 ? (
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      {savedPosts.length} saved {savedPosts.length === 1 ? 'post' : 'posts'}
+                    </p>
+                    {/* Note: You'll need to fetch full post data using postIds */}
+                    <EmptyState
+                      icon={BookmarkIcon}
+                      title="Saved posts"
+                      description="Fetching saved post details..."
+                    />
+                  </div>
+                ) : (
+                  <EmptyState
+                    icon={BookmarkIcon}
+                    title="No saved posts"
+                    description="Save posts you want to revisit later"
+                  />
+                )}
               </TabsContent>
 
               <TabsContent value="projects">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {savedProjects.map((project) => (
-                    <ProjectCard key={project.id} {...project} />
-                  ))}
-                </div>
+                {isLoading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="border border-border rounded-sm overflow-hidden">
+                        <Skeleton className="h-48 w-full" />
+                        <div className="p-4 space-y-2">
+                          <Skeleton className="h-5 w-3/4" />
+                          <Skeleton className="h-4 w-1/2" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : error ? (
+                  <ErrorState
+                    title="Unable to load saved projects"
+                    message="We couldn't fetch your saved projects. Please try again."
+                    onRetry={() => refetchSaved()}
+                  />
+                ) : savedProjects.length > 0 ? (
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      {savedProjects.length} saved {savedProjects.length === 1 ? 'project' : 'projects'}
+                    </p>
+                    {/* Note: You'll need to fetch full project data using projectIds */}
+                    <EmptyState
+                      icon={BookmarkIcon}
+                      title="Saved projects"
+                      description="Fetching saved project details..."
+                    />
+                  </div>
+                ) : (
+                  <EmptyState
+                    icon={BookmarkIcon}
+                    title="No saved projects"
+                    description="Save projects you want to revisit later"
+                  />
+                )}
               </TabsContent>
 
               <TabsContent value="reels">
-                <div className="text-center py-12 text-muted-foreground">No saved reels yet</div>
+                {isLoading ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <Skeleton key={i} className="aspect-[9/16] w-full rounded-sm" />
+                    ))}
+                  </div>
+                ) : error ? (
+                  <ErrorState
+                    title="Unable to load saved reels"
+                    message="We couldn't fetch your saved reels. Please try again."
+                    onRetry={() => refetchSaved()}
+                  />
+                ) : savedReels.length > 0 ? (
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      {savedReels.length} saved {savedReels.length === 1 ? 'reel' : 'reels'}
+                    </p>
+                    {/* Note: You'll need to fetch full reel data using reelIds */}
+                    <EmptyState
+                      icon={BookmarkIcon}
+                      title="Saved reels"
+                      description="Fetching saved reel details..."
+                    />
+                  </div>
+                ) : (
+                  <EmptyState
+                    icon={BookmarkIcon}
+                    title="No saved reels"
+                    description="Save reels you want to revisit later"
+                  />
+                )}
               </TabsContent>
             </Tabs>
           </div>

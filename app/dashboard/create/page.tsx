@@ -1,9 +1,12 @@
+"use client"
+
 import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
 import { MobileNav } from "@/components/mobile-nav"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { PlusIcon, ReelsIcon, GridIcon, BriefcaseIcon } from "@/components/icons"
+import Link from "next/link"
 
 export default function CreatePage() {
   const createOptions = [
@@ -11,31 +14,31 @@ export default function CreatePage() {
       title: "Create Post",
       description: "Share your thoughts, questions, or discussions with the community",
       icon: PlusIcon,
-      href: "/create/post",
+      href: "/dashboard/create/post",
     },
     {
       title: "Upload Reel",
       description: "Share a short video showcasing your design process or project",
       icon: ReelsIcon,
-      href: "/create/reel",
+      href: "/dashboard/create/reel",
     },
     {
       title: "Add Project",
       description: "Add a new project to your portfolio with images and details",
       icon: GridIcon,
-      href: "/create/project",
+      href: "/dashboard/create/project",
     },
     {
       title: "Create Studio",
       description: "Start a new community around a specific architectural topic or interest",
       icon: PlusIcon,
-      href: "/create/studio",
+      href: "/dashboard/create/studio",
     },
     {
       title: "Post Job",
       description: "List a job opportunity for architects and design professionals",
       icon: BriefcaseIcon,
-      href: "/create/job",
+      href: "/dashboard/create/job",
     },
   ]
 
@@ -69,7 +72,9 @@ export default function CreatePage() {
                         <h3 className="font-bold text-lg mb-2">{option.title}</h3>
                         <p className="text-sm text-muted-foreground leading-relaxed">{option.description}</p>
                       </div>
-                      <Button className="w-full rounded-sm mt-2">Get Started</Button>
+                      <Button className="w-full rounded-sm mt-2" asChild>
+                        <Link href={option.href}>Get Started</Link>
+                      </Button>
                     </div>
                   </Card>
                 )

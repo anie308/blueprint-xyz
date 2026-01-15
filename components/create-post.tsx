@@ -54,13 +54,13 @@ export function CreatePost() {
     e.preventDefault()
     setError(null)
 
-    if (!formData.title.trim() || !formData.content.trim()) {
-      setError('Title and content are required')
+    if (!formData.content.trim()) {
+      setError('Content is required')
       return
     }
 
     const result = await createPost({
-      title: formData.title,
+      title: formData.title.trim() || undefined, // Title is optional
       content: formData.content,
       studioId: formData.studioId || undefined,
       images: formData.images
@@ -101,11 +101,11 @@ export function CreatePost() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-3">
               <Input 
-                placeholder="Post title" 
+                placeholder="Post title (optional)" 
                 className="font-semibold bg-secondary border-border" 
                 value={formData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
-                required
+                maxLength={200}
               />
               
               <div className="flex gap-2">

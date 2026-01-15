@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useCreatePostMutation, useGetStudiosQuery } from '@/lib/store/api'
 
 export interface CreatePostData {
-  title: string
+  title?: string // Optional according to API guide
   content: string
   studioId?: string
   images?: File[]
@@ -28,12 +28,29 @@ export function useCreatePost() {
   const createPost = async (postData: CreatePostData) => {
     setIsSubmitting(true)
     try {
-      const result = await createPostMutation({
-        title: postData.title,
+      // Build request according to API guide
+      const requestData: {
+        title?: string
+        content: string
+        studioId?: string
+        images?: string[]
+      } = {
         content: postData.content,
-        studioId: postData.studioId,
-        images: postData.images
-      }).unwrap()
+      }
+
+      // Add optional fields
+      if (postData.title?.trim()) {
+        requestData.title = postData.title.trim()
+      }
+
+      if (postData.studioId) {
+        requestData.studioId = postData.studioId
+      }
+
+      // TODO: Upload images first and get URLs, then add to requestData.images
+      // For now, images are handled separately if needed
+
+      const result = await createPostMutation(requestData).unwrap()
 
       return { success: true, data: result }
     } catch (error: any) {

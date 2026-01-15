@@ -1,3 +1,5 @@
+import { EndpointBuilder } from '@reduxjs/toolkit/query/react'
+
 // Project types
 export interface Project {
   _id: string
@@ -51,7 +53,9 @@ export interface PaginatedResponse<T> {
     page: number
     limit: number
     total: number
-    pages: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
   }
 }
 
@@ -64,7 +68,7 @@ export interface SearchParams {
 }
 
 // Project endpoints
-export const projectEndpoints = (builder: any) => ({
+export const projectEndpoints = (builder: EndpointBuilder<any, any, any>) => ({
   // Project CRUD
   getProjects: builder.query<PaginatedResponse<Project>, SearchParams>({
     query: (params) => ({

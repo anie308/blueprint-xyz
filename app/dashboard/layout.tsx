@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useIsAuthenticated } from "@/lib/store/hooks"
+import { useSelector } from "react-redux"
+import { RootState } from "@/lib/store"
 
 export default function DashboardLayout({
   children,
@@ -11,21 +13,48 @@ export default function DashboardLayout({
 }) {
   const [isLoading, setIsLoading] = useState(true)
   const isAuthenticated = useIsAuthenticated()
+  const token = useSelector((state: RootState) => state.auth.token)
+  const user = useSelector((state: RootState) => state.auth.user)
 
   useEffect(() => {
-    // Small delay to allow Redux to initialize
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 100)
+    // Wait for auth initialization from localStorage
+    // Check if we have token in localStorage (even if Redux hasn't loaded yet)
+    const checkAuth = () => {
+      if (typeof window !== 'undefined') {
+        const storedToken = localStorage.getItem('blueprint_auth_token')
+        const storedUser = localStorage.getItem('blueprint_auth_user')
+        
+        // If we have stored auth data, wait a bit longer for Redux to initialize
+        if (storedToken || storedUser) {
+          setTimeout(() => {
+            setIsLoading(false)
+          }, 300)
+        } else {
+          // No stored auth, can check immediately
+          setIsLoading(false)
+        }
+      } else {
+        setIsLoading(false)
+      }
+    }
 
-    return () => clearTimeout(timer)
+    checkAuth()
   }, [])
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      redirect("/auth/login")
+    // Only redirect if we're sure there's no auth (after loading)
+    if (!isLoading && !isAuthenticated && !token) {
+      // Double check localStorage one more time
+      if (typeof window !== 'undefined') {
+        const storedToken = localStorage.getItem('blueprint_auth_token')
+        if (!storedToken) {
+          redirect("/auth/login")
+        }
+      } else {
+        redirect("/auth/login")
+      }
     }
-  }, [isLoading, isAuthenticated])
+  }, [isLoading, isAuthenticated, token])
 
   if (isLoading) {
     return (
@@ -38,8 +67,18 @@ export default function DashboardLayout({
     )
   }
 
-  if (!isAuthenticated) {
-    return null // Will redirect to login
+  // If we have token or user, allow access (even if isAuthenticated is false temporarily)
+  // This prevents premature redirects during Redux initialization
+  if (!isAuthenticated && !token && !user) {
+    // Check localStorage one final time
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem('blueprint_auth_token')
+      if (!storedToken) {
+        return null // Will redirect to login
+      }
+    } else {
+      return null // Will redirect to login
+    }
   }
 
   return (

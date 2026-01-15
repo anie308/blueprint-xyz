@@ -4,6 +4,14 @@ export interface ApiResponse<T> {
   success: boolean
   data: T
   message?: string
+  error?: string
+  details?: {
+    validationErrors?: Array<{
+      field: string
+      message: string
+      value: any
+    }>
+  }
 }
 
 export interface PaginatedResponse<T> {
@@ -13,7 +21,9 @@ export interface PaginatedResponse<T> {
     page: number
     limit: number
     total: number
-    pages: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
   }
 }
 
@@ -64,12 +74,19 @@ export interface Project {
 
 export interface Post {
   _id: string
+  title?: string
   content: string
   images?: string[]
-  author: string
+  mediaUrl?: string // Support both images array and mediaUrl
+  author: string | User
+  authorId?: User | Studio // Support both formats
   authorType: 'User' | 'Studio'
+  studio?: string | Studio
+  studioId?: string | Studio // Support studio attribution
   likes: string[]
+  likesCount?: number // Support both formats
   comments: string[]
+  commentsCount?: number // Support both formats
   createdAt: string
   updatedAt: string
 }
@@ -220,7 +237,11 @@ export interface CreateReelRequest {
 export interface CreateStudioRequest {
   name: string
   description: string
-  isPublic: boolean
+  isPublic?: boolean
+  isPrivate?: boolean // API requires this
+  category: string // API requires this
+  studioRules?: string // API requires this (can be empty string)
+  slug?: string
 }
 
 export interface CreateJobRequest {

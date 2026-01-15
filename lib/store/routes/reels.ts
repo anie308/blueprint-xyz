@@ -1,3 +1,5 @@
+import { EndpointBuilder } from '@reduxjs/toolkit/query/react'
+
 // Reel types
 export interface Reel {
   _id: string
@@ -51,7 +53,9 @@ export interface PaginatedResponse<T> {
     page: number
     limit: number
     total: number
-    pages: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
   }
 }
 
@@ -64,7 +68,7 @@ export interface SearchParams {
 }
 
 // Reel endpoints
-export const reelEndpoints = (builder: any) => ({
+export const reelEndpoints = (builder: EndpointBuilder<any, any, any>) => ({
   // Reel CRUD
   getReels: builder.query<PaginatedResponse<Reel>, SearchParams>({
     query: (params) => ({

@@ -35,6 +35,8 @@ export default function StudiosPage() {
     refetch
   } = useStudiosData()
 
+  console.log(studios, "studios")
+
   const [localSearchQuery, setLocalSearchQuery] = useState('')
 
   const handleSearchSubmit = (e: React.FormEvent) => {

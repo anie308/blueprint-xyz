@@ -1,3 +1,5 @@
+import { EndpointBuilder } from '@reduxjs/toolkit/query/react'
+
 // Health check types
 export interface HealthResponse {
   status: string
@@ -11,7 +13,7 @@ export interface ApiResponse<T> {
 }
 
 // Health check endpoints
-export const healthEndpoints = (builder: any) => ({
+export const healthEndpoints = (builder: EndpointBuilder<any, any, any>) => ({
   // Health check
   getHealth: builder.query<ApiResponse<HealthResponse>, void>({
     query: () => '/health',

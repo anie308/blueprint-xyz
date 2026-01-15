@@ -3,6 +3,7 @@
 import { SearchIcon, BellIcon, UserIcon } from "./icons"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
+import Link from "next/link"
 
 export function Header() {
   return (
@@ -22,11 +23,15 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-2 ml-4">
-          <Button variant="ghost" size="icon" className="hidden md:flex">
-            <BellIcon className="w-5 h-5" />
+          <Button variant="ghost" size="icon" className="hidden md:flex" asChild>
+            <Link href="/dashboard/notifications">
+              <BellIcon className="w-5 h-5" />
+            </Link>
           </Button>
-          <Button variant="ghost" size="icon" className="hidden md:flex">
-            <UserIcon className="w-5 h-5" />
+          <Button variant="ghost" size="icon" className="hidden md:flex" asChild>
+            <Link href="/dashboard/profile">
+              <UserIcon className="w-5 h-5" />
+            </Link>
           </Button>
         </div>
       </div>

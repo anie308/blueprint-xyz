@@ -1,3 +1,5 @@
+import { EndpointBuilder } from '@reduxjs/toolkit/query/react'
+
 // Job types
 export interface Job {
   _id: string
@@ -48,7 +50,9 @@ export interface PaginatedResponse<T> {
     page: number
     limit: number
     total: number
-    pages: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
   }
 }
 
@@ -61,7 +65,7 @@ export interface SearchParams {
 }
 
 // Job endpoints
-export const jobEndpoints = (builder: any) => ({
+export const jobEndpoints = (builder: EndpointBuilder<any, any, any>) => ({
   // Job CRUD
   getJobs: builder.query<PaginatedResponse<Job>, SearchParams>({
     query: (params) => ({

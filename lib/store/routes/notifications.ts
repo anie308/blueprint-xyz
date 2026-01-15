@@ -1,3 +1,5 @@
+import { EndpointBuilder } from '@reduxjs/toolkit/query/react'
+
 // Notification types
 export interface Notification {
   _id: string
@@ -23,17 +25,20 @@ export interface PaginatedResponse<T> {
     page: number
     limit: number
     total: number
-    pages: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
   }
 }
 
 export interface PaginationParams {
   page?: number
   limit?: number
+  unreadOnly?: boolean
 }
 
 // Notification endpoints
-export const notificationEndpoints = (builder: any) => ({
+export const notificationEndpoints = (builder: EndpointBuilder<any, any, any>) => ({
   // Get notifications
   getNotifications: builder.query<PaginatedResponse<Notification>, PaginationParams>({
     query: (params) => ({

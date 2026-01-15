@@ -1,3 +1,5 @@
+import { EndpointBuilder } from '@reduxjs/toolkit/query/react'
+
 // Feed types
 export interface Project {
   _id: string
@@ -54,7 +56,9 @@ export interface PaginatedResponse<T> {
     page: number
     limit: number
     total: number
-    pages: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
   }
 }
 
@@ -64,7 +68,7 @@ export interface PaginationParams {
 }
 
 // Feed and trending endpoints
-export const feedEndpoints = (builder: any) => ({
+export const feedEndpoints = (builder: EndpointBuilder<any, any, any>) => ({
   // Personalized feed
   getFeed: builder.query<PaginatedResponse<Project | Post | Reel>, PaginationParams>({
     query: (params) => ({

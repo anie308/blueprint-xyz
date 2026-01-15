@@ -39,23 +39,79 @@ import {
   type SendMessageRequest,
 } from './routes'
 
-// Base query with authentication
-const baseQuery = fetchBaseQuery({
-  baseUrl: process.env.NEXT_PUBLIC_API_URL || '/api',
-  prepareHeaders: (headers, { getState }) => {
-    // Get token from Redux state
-    const token = (getState() as any).auth.token
-    if (token) {
-      headers.set('authorization', `Bearer ${token}`)
+// Base query with authentication and token refresh
+const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
+  const baseQuery = fetchBaseQuery({
+    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api',
+    credentials: 'include', // Important for cookie-based refresh tokens
+    prepareHeaders: (headers, { getState }) => {
+      // Get token from Redux state or localStorage
+      const state = getState() as any
+      const token = state.auth?.token || (typeof window !== 'undefined' ? localStorage.getItem('blueprint_auth_token') : null)
+      
+      if (token) {
+        headers.set('authorization', `Bearer ${token}`)
+      }
+      return headers
+    },
+  })
+
+  let result = await baseQuery(args, api, extraOptions)
+
+  // Handle 401 Unauthorized - token expired
+  if (result.error && result.error.status === 401) {
+    // Try to refresh token
+    const refreshResult = await baseQuery(
+      {
+        url: '/auth/refresh',
+        method: 'POST',
+      },
+      api,
+      extraOptions
+    )
+
+    if (refreshResult.data) {
+        // Store new token
+        const refreshData = refreshResult.data as any
+        if (refreshData.success && refreshData.data?.token) {
+          const token = refreshData.data.token
+          api.dispatch({ type: 'auth/updateToken', payload: token })
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('blueprint_auth_token', token)
+          }
+
+          // Retry original query with new token
+          result = await baseQuery(args, api, extraOptions)
+        } else {
+        // Refresh failed - logout user
+        api.dispatch({ type: 'auth/logout' })
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('blueprint_auth_token')
+          // Redirect to login if in browser
+          if (window.location.pathname !== '/auth/login') {
+            window.location.href = '/auth/login'
+          }
+        }
+      }
+    } else {
+      // Refresh failed - logout user
+      api.dispatch({ type: 'auth/logout' })
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('blueprint_auth_token')
+        if (window.location.pathname !== '/auth/login') {
+          window.location.href = '/auth/login'
+        }
+      }
     }
-    return headers
-  },
-})
+  }
+
+  return result
+}
 
 // RTK Query API slice
 export const api = createApi({
   reducerPath: 'api',
-  baseQuery,
+  baseQuery: baseQueryWithReauth,
   tagTypes: [
     'User',
     'Studio',
@@ -93,6 +149,7 @@ export const {
   useRegisterMutation,
   useGetMeQuery,
   useLogoutMutation,
+  useRefreshTokenMutation,
   
   // Users
   useGetUserQuery,

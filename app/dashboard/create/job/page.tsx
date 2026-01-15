@@ -11,24 +11,33 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
-import {  PlusIcon, XIcon } from "@/components/icons"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle, CheckCircle } from "lucide-react"
+import { PlusIcon, XIcon } from "@/components/icons"
 import Link from "next/link"
+import { useCreateJobMutation } from "@/lib/store/api"
+import { useRouter } from "next/navigation"
+import { handleApiError } from "@/lib/utils/errorHandler"
 
 export default function CreateJobPage() {
+  const router = useRouter()
+  const [createJobMutation, { isLoading: isCreating }] = useCreateJobMutation()
+  
   const [jobTitle, setJobTitle] = useState("")
   const [company, setCompany] = useState("")
   const [location, setLocation] = useState("")
-  const [jobType, setJobType] = useState("")
+  const [jobType, setJobType] = useState<"full-time" | "part-time" | "contract" | "internship">("full-time")
   const [experienceLevel, setExperienceLevel] = useState("")
   const [salaryMin, setSalaryMin] = useState("")
   const [salaryMax, setSalaryMax] = useState("")
   const [description, setDescription] = useState("")
   const [responsibilities, setResponsibilities] = useState("")
   const [requirements, setRequirements] = useState("")
+  const [benefits, setBenefits] = useState("")
   const [skills, setSkills] = useState<string[]>([])
   const [skillInput, setSkillInput] = useState("")
-  const [applicationUrl, setApplicationUrl] = useState("")
-  const [applicationEmail, setApplicationEmail] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
   const handleAddSkill = () => {
     if (skillInput.trim() && !skills.includes(skillInput.trim())) {
@@ -41,22 +50,51 @@ export default function CreateJobPage() {
     setSkills(skills.filter((skill) => skill !== skillToRemove))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("[v0] Creating job:", {
-      jobTitle,
-      company,
-      location,
-      jobType,
-      experienceLevel,
-      salary: `${salaryMin} - ${salaryMax}`,
-      description,
-      responsibilities,
-      requirements,
-      skills,
-      applicationUrl,
-      applicationEmail,
-    })
+    setError(null)
+    setSuccess(false)
+
+    // Validation
+    if (!jobTitle.trim() || !company.trim() || !location.trim() || !description.trim() || !requirements.trim()) {
+      setError("Please fill in all required fields")
+      return
+    }
+
+    // Parse salary
+    const salary = salaryMin || salaryMax ? {
+      min: salaryMin ? parseFloat(salaryMin.replace(/[^0-9.]/g, '')) : 0,
+      max: salaryMax ? parseFloat(salaryMax.replace(/[^0-9.]/g, '')) : 0,
+      currency: "USD"
+    } : undefined
+
+    // Parse requirements and benefits
+    const requirementsList = requirements.split('\n').filter(r => r.trim())
+    const benefitsList = benefits.split('\n').filter(b => b.trim())
+
+    try {
+      const result = await createJobMutation({
+        title: jobTitle.trim(),
+        description: description.trim(),
+        company: company.trim(),
+        location: location.trim(),
+        type: jobType,
+        salary,
+        requirements: [...requirementsList, ...skills],
+        benefits: benefitsList
+      }).unwrap()
+
+      if (result.success) {
+        setSuccess(true)
+        setTimeout(() => {
+          router.push("/dashboard/jobs")
+        }, 2000)
+      } else {
+        setError(result.message || "Failed to create job")
+      }
+    } catch (err: any) {
+      setError(handleApiError(err))
+    }
   }
 
   return (
@@ -67,7 +105,7 @@ export default function CreateJobPage() {
         <main className="pb-20 md:pb-8">
           <div className="max-w-3xl mx-auto p-4 md:p-6">
             <Link
-              href="/create"
+              href="/dashboard/create"
               className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
             >
               {/* <ArrowLeftIcon className="w-4 h-4" /> */}
@@ -82,6 +120,22 @@ export default function CreateJobPage() {
             </div>
 
             <Card className="p-6">
+              {success && (
+                <Alert className="mb-6 border-green-200 bg-green-50">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    Job posted successfully! Redirecting to jobs page...
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {error && (
+                <Alert variant="destructive" className="mb-6">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Job Title */}
                 <div className="space-y-2">
@@ -126,16 +180,14 @@ export default function CreateJobPage() {
                     <select
                       id="jobType"
                       value={jobType}
-                      onChange={(e) => setJobType(e.target.value)}
+                      onChange={(e) => setJobType(e.target.value as "full-time" | "part-time" | "contract" | "internship")}
                       required
                       className="w-full px-3 py-2 rounded-sm border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     >
-                      <option value="">Select type</option>
-                      <option value="Full-time">Full-time</option>
-                      <option value="Part-time">Part-time</option>
-                      <option value="Contract">Contract</option>
-                      <option value="Freelance">Freelance</option>
-                      <option value="Internship">Internship</option>
+                      <option value="full-time">Full-time</option>
+                      <option value="part-time">Part-time</option>
+                      <option value="contract">Contract</option>
+                      <option value="internship">Internship</option>
                     </select>
                   </div>
 
@@ -190,13 +242,12 @@ export default function CreateJobPage() {
 
                 {/* Responsibilities */}
                 <div className="space-y-2">
-                  <Label htmlFor="responsibilities">Key Responsibilities *</Label>
+                  <Label htmlFor="responsibilities">Key Responsibilities (Optional)</Label>
                   <Textarea
                     id="responsibilities"
                     value={responsibilities}
                     onChange={(e) => setResponsibilities(e.target.value)}
                     placeholder="List the main responsibilities and duties..."
-                    required
                     rows={5}
                   />
                 </div>
@@ -208,8 +259,20 @@ export default function CreateJobPage() {
                     id="requirements"
                     value={requirements}
                     onChange={(e) => setRequirements(e.target.value)}
-                    placeholder="List the qualifications, education, and experience required..."
+                    placeholder="List the qualifications, education, and experience required (one per line)..."
                     required
+                    rows={5}
+                  />
+                </div>
+
+                {/* Benefits */}
+                <div className="space-y-2">
+                  <Label htmlFor="benefits">Benefits (Optional)</Label>
+                  <Textarea
+                    id="benefits"
+                    value={benefits}
+                    onChange={(e) => setBenefits(e.target.value)}
+                    placeholder="List the benefits offered (one per line)..."
                     rows={5}
                   />
                 </div>
@@ -255,44 +318,13 @@ export default function CreateJobPage() {
                   )}
                 </div>
 
-                {/* Application Method */}
-                <div className="space-y-4">
-                  <Label>How to Apply *</Label>
-                  <div className="space-y-2">
-                    <Label htmlFor="applicationUrl" className="text-sm font-normal">
-                      Application URL
-                    </Label>
-                    <Input
-                      id="applicationUrl"
-                      type="url"
-                      value={applicationUrl}
-                      onChange={(e) => setApplicationUrl(e.target.value)}
-                      placeholder="https://yourcompany.com/careers/apply"
-                    />
-                  </div>
-                  <div className="text-center text-sm text-muted-foreground">or</div>
-                  <div className="space-y-2">
-                    <Label htmlFor="applicationEmail" className="text-sm font-normal">
-                      Application Email
-                    </Label>
-                    <Input
-                      id="applicationEmail"
-                      type="email"
-                      value={applicationEmail}
-                      onChange={(e) => setApplicationEmail(e.target.value)}
-                      placeholder="careers@yourcompany.com"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Provide at least one application method</p>
-                </div>
-
                 {/* Submit Buttons */}
                 <div className="flex gap-3 pt-4">
-                  <Button type="submit" className="flex-1">
-                    Post Job
+                  <Button type="submit" className="flex-1" disabled={isCreating}>
+                    {isCreating ? "Posting Job..." : "Post Job"}
                   </Button>
                   <Button type="button" variant="outline" className="flex-1 bg-transparent" asChild>
-                    <Link href="/create">Cancel</Link>
+                    <Link href="/dashboard/create">Cancel</Link>
                   </Button>
                 </div>
               </form>

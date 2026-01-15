@@ -94,7 +94,7 @@ export default function StudioPage() {
         <Header />
         <main className="pb-20 md:pb-8">
           <div className="max-w-6xl mx-auto p-4 md:p-6">
-            <StudioHeader studio={studio} isOwner={isOwner} />
+            <StudioHeader studio={studio} isOwner={isOwner} postsCount={posts.length} />
             
             <StudioTabs 
               activeTab={activeTab} 
@@ -104,7 +104,12 @@ export default function StudioPage() {
 
             <div className="mt-6">
               {activeTab === 'posts' && (
-                <StudioPosts posts={posts} studio={studio} />
+                <StudioPosts 
+                  posts={posts} 
+                  studio={studio} 
+                  onPostCreated={refetch}
+                  onPostDeleted={refetch}
+                />
               )}
               {activeTab === 'members' && (
                 <StudioMembers members={members} studio={studio} isOwner={isOwner} />

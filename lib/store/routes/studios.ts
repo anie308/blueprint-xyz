@@ -1,3 +1,5 @@
+import { EndpointBuilder } from '@reduxjs/toolkit/query/react'
+
 // Studio types
 export interface Studio {
   _id: string
@@ -15,7 +17,11 @@ export interface Studio {
 export interface CreateStudioRequest {
   name: string
   description: string
-  isPublic: boolean
+  isPublic?: boolean
+  isPrivate?: boolean // API requires this
+  category: string // API requires this
+  studioRules?: string // API requires this (can be empty string)
+  slug?: string
 }
 
 export interface User {
@@ -82,7 +88,9 @@ export interface PaginatedResponse<T> {
     page: number
     limit: number
     total: number
-    pages: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
   }
 }
 
@@ -95,7 +103,7 @@ export interface SearchParams {
 }
 
 // Studio endpoints
-export const studioEndpoints = (builder: any) => ({
+export const studioEndpoints = (builder: EndpointBuilder<any, any, any>) => ({
   // Studio CRUD
   getStudios: builder.query<PaginatedResponse<Studio>, SearchParams>({
     query: (params) => ({
@@ -106,7 +114,7 @@ export const studioEndpoints = (builder: any) => ({
   }),
   
   getStudio: builder.query<ApiResponse<Studio>, string>({
-    query: (id) => `/studios/${id}`,
+    query: (id) => `/studios/${id}`, // Only accepts MongoDB ObjectId, not slug
     providesTags: (result: any, error: any, id: string) => [{ type: 'Studio', id }],
   }),
   

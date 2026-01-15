@@ -1,19 +1,32 @@
+import { EndpointBuilder } from '@reduxjs/toolkit/query/react'
+import type { User, Studio } from './types'
+
 // Post types
 export interface Post {
   _id: string
+  title?: string
   content: string
   images?: string[]
-  author: string
+  mediaUrl?: string // Support both images array and mediaUrl
+  author: string | User
+  authorId?: User | Studio // Support both formats
   authorType: 'User' | 'Studio'
+  studio?: string | Studio
+  studioId?: string | Studio // Support studio attribution
   likes: string[]
+  likesCount?: number // Support both formats
   comments: string[]
+  commentsCount?: number // Support both formats
   createdAt: string
   updatedAt: string
 }
 
 export interface CreatePostRequest {
+  title?: string
   content: string
   images?: string[]
+  mediaUrl?: string
+  studioId?: string
 }
 
 export interface Comment {
@@ -30,6 +43,8 @@ export interface Comment {
 
 export interface CreateCommentRequest {
   content: string
+  entityId?: string // Post ID (can be inferred from URL, but API might require it)
+  entityType?: 'Project' | 'Post' | 'Reel' // Can be inferred, but API might require it
   parentId?: string
 }
 
@@ -46,7 +61,9 @@ export interface PaginatedResponse<T> {
     page: number
     limit: number
     total: number
-    pages: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
   }
 }
 
@@ -56,10 +73,11 @@ export interface SearchParams {
   search?: string
   sort?: 'newest' | 'oldest' | 'popular' | 'views'
   filter?: string
+  studio?: string // Filter posts by studio
 }
 
 // Post endpoints
-export const postEndpoints = (builder: any) => ({
+export const postEndpoints = (builder: EndpointBuilder<any, any, any>) => ({
   // Post CRUD
   getPosts: builder.query<PaginatedResponse<Post>, SearchParams>({
     query: (params) => ({

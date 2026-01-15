@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
 import { MobileNav } from "@/components/mobile-nav"
@@ -5,63 +8,83 @@ import { ConversationCard } from "@/components/conversation-card"
 import { SubscriptionLimitBanner } from "@/components/subscription-limit-banner"
 import { Input } from "@/components/ui/input"
 import { SearchIcon } from "@/components/icons"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useGetConversationsQuery } from "@/lib/store/api"
+import { ErrorState } from "@/components/dashboard/ErrorStates"
+import { EmptyState } from "@/components/dashboard/EmptyStates"
+import { MessageSquare } from "lucide-react"
+import { formatDistanceToNow } from "date-fns"
 
 export default function MessagesPage() {
-  // Mock data - in real app, this would come from a database
-  const conversations = [
-    {
-      id: "1",
-      name: "Sarah Chen",
-      username: "sarahchen",
-      avatar: "/architect-woman.png",
-      lastMessage: "Thanks for the feedback on the sustainable design proposal!",
-      timestamp: "2m ago",
-      unread: true,
-      online: true,
-    },
-    {
-      id: "2",
-      name: "Marcus Johnson",
-      username: "marcusj",
-      avatar: "/architect-man.jpg",
-      lastMessage: "Would love to collaborate on the community center project",
-      timestamp: "1h ago",
-      unread: true,
-      online: false,
-    },
-    {
-      id: "3",
-      name: "Elena Rodriguez",
-      username: "elenarodriguez",
-      avatar: "/architect-woman.png",
-      lastMessage: "The renders look amazing! When can we schedule a call?",
-      timestamp: "3h ago",
-      unread: false,
-      online: true,
-    },
-    {
-      id: "4",
-      name: "David Kim",
-      username: "davidkim",
-      avatar: "/architect-man.jpg",
-      lastMessage: "I sent over the revised floor plans",
-      timestamp: "1d ago",
-      unread: false,
-      online: false,
-    },
-    {
-      id: "5",
-      name: "Priya Patel",
-      username: "priyapatel",
-      avatar: "/architect-woman.png",
-      lastMessage: "Great meeting you at the architecture conference!",
-      timestamp: "2d ago",
-      unread: false,
-      online: false,
-    },
-  ]
+  const [searchQuery, setSearchQuery] = useState("")
+
+  // Fetch conversations from API
+  const {
+    data: conversationsData,
+    isLoading,
+    error,
+    refetch
+  } = useGetConversationsQuery({
+    page: 1,
+    limit: 50
+  }, {
+    pollingInterval: 30000, // 30 seconds for real-time updates
+    refetchOnFocus: true,
+    refetchOnReconnect: true
+  })
+
+  const conversationsList = Array.isArray((conversationsData as any)?.data) 
+    ? (conversationsData as any).data 
+    : []
+
+  // Transform API conversation data to ConversationCard props
+  const conversations = conversationsList.map((conv: any) => {
+    // Get the other participant (not current user)
+    const otherParticipant = conv.participants?.find((p: any) => {
+      // Assuming participants can be objects or IDs
+      const participantId = typeof p === 'string' ? p : p._id || p.id
+      // You'd need to get current user ID from auth context
+      // For now, just take the first participant
+      return true
+    }) || conv.participants?.[0]
+
+    const participantName = typeof otherParticipant === 'string' 
+      ? 'User' 
+      : otherParticipant?.fullName || otherParticipant?.name || 'User'
+    
+    const participantUsername = typeof otherParticipant === 'string'
+      ? 'user'
+      : otherParticipant?.username || 'user'
+
+    const participantAvatar = typeof otherParticipant === 'string'
+      ? undefined
+      : otherParticipant?.profilePicture || otherParticipant?.profilePictureUrl || otherParticipant?.avatar
+
+    return {
+      id: conv._id || conv.id,
+      name: participantName,
+      username: participantUsername,
+      avatar: participantAvatar,
+      lastMessage: conv.lastMessage?.content || "No messages yet",
+      timestamp: conv.lastMessage?.createdAt 
+        ? formatDistanceToNow(new Date(conv.lastMessage.createdAt), { addSuffix: true })
+        : "No messages",
+      unread: (conv.unreadCount || 0) > 0,
+      online: false // This would come from WebSocket presence
+    }
+  })
+
+  // Filter conversations by search query
+  const filteredConversations = conversations.filter((conv: any) => {
+    if (!searchQuery) return true
+    const query = searchQuery.toLowerCase()
+    return conv.name.toLowerCase().includes(query) || 
+           conv.username.toLowerCase().includes(query) ||
+           conv.lastMessage.toLowerCase().includes(query)
+  })
 
   // Mock subscription data - free tier has 50 messages per month
+  // TODO: Get this from user subscription data
   const messagesUsed = 42
   const messagesLimit = 50
 
@@ -90,20 +113,38 @@ export default function MessagesPage() {
             </div>
 
             {/* Conversations List */}
-            <div className="border border-border rounded-sm bg-card overflow-hidden">
-              {conversations.map((conversation) => (
-                <ConversationCard key={conversation.id} {...conversation} />
-              ))}
-            </div>
-
-            {/* Empty State for no conversations */}
-            {conversations.length === 0 && (
-              <div className="border border-border rounded-sm bg-card p-12 text-center">
-                <p className="text-muted-foreground mb-4">No messages yet</p>
-                <p className="text-sm text-muted-foreground">
-                  Start a conversation by visiting someone's profile and clicking Message
-                </p>
+            {isLoading ? (
+              <div className="border border-border rounded-sm bg-card overflow-hidden">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="p-4 border-b border-border last:border-b-0">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-12 h-12 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-48" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
+            ) : error ? (
+              <ErrorState
+                title="Unable to load conversations"
+                message="We couldn't fetch your conversations. Please try again."
+                onRetry={() => refetch()}
+              />
+            ) : filteredConversations.length > 0 ? (
+              <div className="border border-border rounded-sm bg-card overflow-hidden">
+                {filteredConversations.map((conversation) => (
+                  <ConversationCard key={conversation.id} {...conversation} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={MessageSquare}
+                title="No messages yet"
+                description="Start a conversation by visiting someone's profile and clicking Message"
+              />
             )}
           </div>
         </main>

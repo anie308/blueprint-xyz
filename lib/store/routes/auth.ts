@@ -42,6 +42,7 @@ export const authEndpoints = (builder: EndpointBuilder<any, any, any>) => ({
       url: '/auth/login',
       method: 'POST',
       body: credentials,
+      credentials: 'include', // Important for refresh token cookie
     }),
     invalidatesTags: ['User'],
   }),
@@ -51,6 +52,7 @@ export const authEndpoints = (builder: EndpointBuilder<any, any, any>) => ({
       url: '/auth/register',
       method: 'POST',
       body: userData,
+      credentials: 'include', // Important for refresh token cookie
     }),
     invalidatesTags: ['User'],
   }),
@@ -64,8 +66,17 @@ export const authEndpoints = (builder: EndpointBuilder<any, any, any>) => ({
     query: () => ({
       url: '/auth/logout',
       method: 'POST',
+      credentials: 'include', // Important for clearing refresh token cookie
     }),
     invalidatesTags: ['User'],
+  }),
+
+  refreshToken: builder.mutation<ApiResponse<{ token: string }>, void>({
+    query: () => ({
+      url: '/auth/refresh',
+      method: 'POST',
+      credentials: 'include', // Important for refresh token cookie
+    }),
   }),
 
   // User endpoints
@@ -83,7 +94,7 @@ export const authEndpoints = (builder: EndpointBuilder<any, any, any>) => ({
     invalidatesTags: ['User'],
   }),
   
-  updateProfilePicture: builder.mutation<ApiResponse<{ profilePicture: string }>, FormData>({
+  updateProfilePicture: builder.mutation<ApiResponse<{ user: User }>, FormData>({
     query: (formData) => ({
       url: '/users/me/profile-picture',
       method: 'PATCH',

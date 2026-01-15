@@ -76,9 +76,47 @@ export default function DashboardPage() {
                   ) : isEmpty ? (
                     <FeedEmpty filter={activeFilter} />
                   ) : (
-                    displayContent.map((post: any) => (
-                      <PostCard key={post._id} {...post} />
-                    ))
+                    displayContent.map((post: any) => {
+                      // Transform post data to ensure all required props are passed
+                      const authorData = post.authorId || post.author || {}
+                      const authorId = typeof authorData === 'object' && authorData !== null
+                        ? {
+                            fullName: authorData.fullName || authorData.name || 'User',
+                            username: authorData.username || 'user',
+                            profilePictureUrl: authorData.profilePictureUrl || authorData.profilePicture || null,
+                            _id: authorData._id || authorData.id,
+                            id: authorData._id || authorData.id,
+                          }
+                        : null
+
+                      const studioIdData = post.studioId || post.studio || {}
+                      const studioName = typeof studioIdData === 'object' && studioIdData !== null
+                        ? studioIdData.name || studioIdData
+                        : studioIdData || 'General'
+
+                      return (
+                        <PostCard
+                          key={post._id || post.id}
+                          _id={post._id || post.id}
+                          id={post._id || post.id}
+                          authorId={authorId}
+                          author={post.author}
+                          studioId={studioIdData}
+                          studio={studioName}
+                          title={post.title}
+                          content={post.content}
+                          mediaUrl={post.mediaUrl}
+                          image={post.images?.[0]}
+                          images={post.images}
+                          appreciations={post.likesCount || (Array.isArray(post.likes) ? post.likes.length : 0)}
+                          comments={post.commentsCount || (Array.isArray(post.comments) ? post.comments.length : 0)}
+                          createdAt={post.createdAt}
+                          timestamp={post.createdAt}
+                          likes={Array.isArray(post.likes) ? post.likes : []}
+                          onDeleted={refetchFeed}
+                        />
+                      )
+                    })
                   )}
                 </div>
               </div>

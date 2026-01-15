@@ -72,10 +72,30 @@ export class AuthService {
     return state.auth.isAuthenticated && !!state.auth.token
   }
   
-  // Get current user
+  // Get current user (checks Redux state first, then localStorage)
   static getCurrentUser() {
     const state = store.getState()
-    return state.auth.user
+    
+    // Return from Redux state if available
+    if (state.auth.user) {
+      return state.auth.user
+    }
+    
+    // Fallback to localStorage if Redux state doesn't have user
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('blueprint_auth_user')
+      if (userStr) {
+        try {
+          return JSON.parse(userStr)
+        } catch (error) {
+          console.error('Failed to parse user data from localStorage:', error)
+          localStorage.removeItem('blueprint_auth_user')
+          return null
+        }
+      }
+    }
+    
+    return null
   }
   
   // Get current token

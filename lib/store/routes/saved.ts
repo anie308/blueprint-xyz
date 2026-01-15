@@ -1,3 +1,5 @@
+import { EndpointBuilder } from '@reduxjs/toolkit/query/react'
+
 // Saved item types
 export interface SavedItem {
   _id: string
@@ -20,7 +22,9 @@ export interface PaginatedResponse<T> {
     page: number
     limit: number
     total: number
-    pages: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
   }
 }
 
@@ -30,7 +34,7 @@ export interface PaginationParams {
 }
 
 // Saved items endpoints
-export const savedEndpoints = (builder: any) => ({
+export const savedEndpoints = (builder: EndpointBuilder<any, any, any>) => ({
   // Get saved items
   getSavedItems: builder.query<PaginatedResponse<SavedItem>, PaginationParams>({
     query: (params) => ({

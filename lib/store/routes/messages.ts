@@ -1,3 +1,5 @@
+import { EndpointBuilder } from '@reduxjs/toolkit/query/react'
+
 // Message types
 export interface Message {
   _id: string
@@ -35,7 +37,9 @@ export interface PaginatedResponse<T> {
     page: number
     limit: number
     total: number
-    pages: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
   }
 }
 
@@ -45,7 +49,7 @@ export interface PaginationParams {
 }
 
 // Message endpoints
-export const messageEndpoints = (builder: any) => ({
+export const messageEndpoints = (builder: EndpointBuilder<any, any, any>) => ({
   // Conversation management
   getConversations: builder.query<PaginatedResponse<Conversation>, PaginationParams>({
     query: (params) => ({
