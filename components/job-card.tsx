@@ -48,7 +48,7 @@ export function JobCard({
 
           {/* Job Info */}
           <div className="flex-1 min-w-0">
-            <Link href={`/jobs/${id}`} className="group">
+            <Link href={`/dashboard/jobs/${id}`} className="group">
               <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{title}</h3>
             </Link>
             <p className="text-sm text-foreground font-medium mt-1">{company}</p>

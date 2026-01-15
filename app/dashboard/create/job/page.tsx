@@ -61,12 +61,20 @@ export default function CreateJobPage() {
       return
     }
 
-    // Parse salary
-    const salary = salaryMin || salaryMax ? {
-      min: salaryMin ? parseFloat(salaryMin.replace(/[^0-9.]/g, '')) : 0,
-      max: salaryMax ? parseFloat(salaryMax.replace(/[^0-9.]/g, '')) : 0,
-      currency: "USD"
-    } : undefined
+    // Format salary range as string (e.g., "$80k-$120k" or "Negotiable")
+    let salaryRangeString = "Negotiable"
+    if (salaryMin || salaryMax) {
+      const min = salaryMin ? parseFloat(salaryMin.replace(/[^0-9.]/g, '')) : null
+      const max = salaryMax ? parseFloat(salaryMax.replace(/[^0-9.]/g, '')) : null
+      
+      if (min && max) {
+        salaryRangeString = `$${Math.round(min / 1000)}k-$${Math.round(max / 1000)}k`
+      } else if (min) {
+        salaryRangeString = `$${Math.round(min / 1000)}k+`
+      } else if (max) {
+        salaryRangeString = `Up to $${Math.round(max / 1000)}k`
+      }
+    }
 
     // Parse requirements and benefits
     const requirementsList = requirements.split('\n').filter(r => r.trim())
@@ -78,8 +86,9 @@ export default function CreateJobPage() {
         description: description.trim(),
         company: company.trim(),
         location: location.trim(),
-        type: jobType,
-        salary,
+        jobType: jobType,
+        salaryRange: salaryRangeString,
+        postedByType: 'User' as const, // Jobs created from dashboard are posted by User
         requirements: [...requirementsList, ...skills],
         benefits: benefitsList
       }).unwrap()

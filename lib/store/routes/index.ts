@@ -13,3 +13,4 @@ export { healthEndpoints } from './health'
 
 // Export all types
 export * from './types'
+export type { JobApplicationRequest } from './jobs'

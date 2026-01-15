@@ -11,7 +11,6 @@ import { TrendingIcon } from "@/components/icons"
 import { useGetTrendingQuery } from "@/lib/store/api"
 import { ErrorState } from "@/components/dashboard/ErrorStates"
 import { EmptyState } from "@/components/dashboard/EmptyStates"
-import { formatDistanceToNow } from "date-fns"
 
 export default function TrendingPage() {
   const [timeFilter, setTimeFilter] = useState<"week" | "month" | "all">("week")
@@ -70,9 +69,6 @@ export default function TrendingPage() {
           appreciations: post.likesCount || (Array.isArray(post.likes) ? post.likes.length : post.likes || post.appreciations || 0),
           comments: post.commentsCount || (Array.isArray(post.comments) ? post.comments.length : post.comments || 0),
           createdAt: post.createdAt,
-          timestamp: post.createdAt
-            ? formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })
-            : 'Recently',
           likes: Array.isArray(post.likes) ? post.likes : [],
         }
       })

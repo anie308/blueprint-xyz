@@ -249,12 +249,9 @@ export interface CreateJobRequest {
   description: string
   company: string
   location: string
-  type: 'full-time' | 'part-time' | 'contract' | 'internship'
-  salary?: {
-    min: number
-    max: number
-    currency: string
-  }
+  jobType: 'full-time' | 'part-time' | 'contract' | 'internship'
+  salaryRange: string // e.g., "50k-70k", "Negotiable", "$80k-$120k"
+  postedByType: 'User' | 'Studio'
   requirements: string[]
   benefits: string[]
 }

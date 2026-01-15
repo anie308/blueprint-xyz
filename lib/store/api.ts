@@ -37,6 +37,7 @@ import {
   type CreateJobRequest,
   type CreateCommentRequest,
   type SendMessageRequest,
+  type JobApplicationRequest,
 } from './routes'
 
 // Base query with authentication and token refresh
@@ -207,6 +208,7 @@ export const {
   useCreateJobMutation,
   useUpdateJobMutation,
   useDeleteJobMutation,
+  useApplyToJobMutation,
   
   // Messages
   useGetConversationsQuery,

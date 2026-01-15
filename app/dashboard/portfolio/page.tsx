@@ -20,7 +20,8 @@ export default function PortfolioPage() {
   // Get current user
   const { data: userData, isLoading: isUserLoading, error: userError } = useGetMeQuery()
 
-  const user = (userData as any)?.data
+  const user = (userData as any)?.data?.user
+  console.log(user, "user")
 
   // Fetch user's projects
   const {
@@ -32,7 +33,7 @@ export default function PortfolioPage() {
     page: 1,
     limit: 50,
     authorId: user?._id || user?.id
-  }, {
+  } as any, {
     skip: !user?._id && !user?.id,
     pollingInterval: 300000, // 5 minutes
     refetchOnFocus: true,
@@ -212,14 +213,152 @@ export default function PortfolioPage() {
                 </div>
               </div>
 
-              {/* Right Column - Projects Grid */}
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h1 className="text-2xl font-bold">Projects</h1>
-                  <Button className="rounded-sm" asChild>
-                    <a href="/dashboard/create/project">Add Project</a>
-                  </Button>
+              {/* Right Column - Profile Details & Projects */}
+              <div className="space-y-6">
+                {/* Profile Description Section */}
+                <div className="border border-border rounded-sm bg-card p-6">
+                  <h2 className="text-xl font-bold mb-4">About</h2>
+                  {isUserLoading ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-3/4" />
+                    </div>
+                  ) : user?.bio ? (
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{user.bio}</p>
+                  ) : (
+                    <p className="text-muted-foreground italic">No description provided. Add one in your profile settings.</p>
+                  )}
                 </div>
+
+                {/* Experience Section */}
+                {(user?.experience || (Array.isArray(user?.experiences) && user.experiences.length > 0)) && (
+                  <div className="border border-border rounded-sm bg-card p-6">
+                    <h2 className="text-xl font-bold mb-4">Experience</h2>
+                    <div className="space-y-6">
+                      {Array.isArray(user.experiences) ? (
+                        user.experiences.map((exp: any, index: number) => (
+                          <div key={index} className="pb-6 last:pb-0 border-b border-border last:border-0">
+                            <div className="flex items-start gap-4">
+                              <div className="w-12 h-12 rounded-sm bg-secondary flex items-center justify-center flex-shrink-0">
+                                <BriefcaseIcon className="w-6 h-6 text-muted-foreground" />
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-foreground">{exp.title || exp.position}</h3>
+                                <p className="text-sm text-muted-foreground">{exp.company || exp.organization}</p>
+                                {exp.location && (
+                                  <p className="text-xs text-muted-foreground mt-1">{exp.location}</p>
+                                )}
+                                {exp.startDate && (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {exp.startDate} {exp.endDate ? `- ${exp.endDate}` : '- Present'}
+                                  </p>
+                                )}
+                                {exp.description && (
+                                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{exp.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : user.experience ? (
+                        <div className="text-muted-foreground whitespace-pre-wrap">{user.experience}</div>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+
+                {/* Education Section */}
+                {(user?.education || (Array.isArray(user?.educations) && user.educations.length > 0)) && (
+                  <div className="border border-border rounded-sm bg-card p-6">
+                    <h2 className="text-xl font-bold mb-4">Education</h2>
+                    <div className="space-y-6">
+                      {Array.isArray(user.educations) ? (
+                        user.educations.map((edu: any, index: number) => (
+                          <div key={index} className="pb-6 last:pb-0 border-b border-border last:border-0">
+                            <div className="flex items-start gap-4">
+                              <div className="w-12 h-12 rounded-sm bg-secondary flex items-center justify-center flex-shrink-0">
+                                <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14v9M12 14l-9-5m9 5l9-5m-9 5v9m0-9l-9 5m9-5l9 5" />
+                                </svg>
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-foreground">{edu.degree || edu.school}</h3>
+                                <p className="text-sm text-muted-foreground">{edu.school || edu.institution}</p>
+                                {edu.field && (
+                                  <p className="text-sm text-muted-foreground">{edu.field}</p>
+                                )}
+                                {edu.graduationYear && (
+                                  <p className="text-xs text-muted-foreground mt-1">{edu.graduationYear}</p>
+                                )}
+                                {edu.description && (
+                                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{edu.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : user.education ? (
+                        <div className="text-muted-foreground whitespace-pre-wrap">{user.education}</div>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+
+                {/* Skills Section */}
+                {(user?.skills || (Array.isArray(user?.skills) && user.skills.length > 0) || user?.tags) && (
+                  <div className="border border-border rounded-sm bg-card p-6">
+                    <h2 className="text-xl font-bold mb-4">Skills</h2>
+                    <div className="flex flex-wrap gap-2">
+                      {(Array.isArray(user.skills) ? user.skills : user.tags || []).map((skill: string, index: number) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1.5 text-sm font-medium bg-secondary text-foreground rounded-sm border border-border"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Certifications Section */}
+                {(user?.certifications || (Array.isArray(user?.certifications) && user.certifications.length > 0)) && (
+                  <div className="border border-border rounded-sm bg-card p-6">
+                    <h2 className="text-xl font-bold mb-4">Certifications</h2>
+                    <div className="space-y-4">
+                      {Array.isArray(user.certifications) ? (
+                        user.certifications.map((cert: any, index: number) => (
+                          <div key={index} className="pb-4 last:pb-0 border-b border-border last:border-0">
+                            <h3 className="font-semibold text-foreground">{cert.name || cert.title}</h3>
+                            {cert.issuer && (
+                              <p className="text-sm text-muted-foreground">{cert.issuer}</p>
+                            )}
+                            {cert.issueDate && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Issued {cert.issueDate} {cert.expiryDate ? `• Expires ${cert.expiryDate}` : ''}
+                              </p>
+                            )}
+                            {cert.credentialId && (
+                              <p className="text-xs text-muted-foreground mt-1">Credential ID: {cert.credentialId}</p>
+                            )}
+                          </div>
+                        ))
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+
+                {/* Projects Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold">Projects</h2>
+                    <Button className="rounded-sm" asChild>
+                      <Link href="/dashboard/create/project">Add Project</Link>
+                    </Button>
+                  </div>
                 {isProjectsLoading ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                     {Array.from({ length: 6 }).map((_, i) => (
@@ -240,7 +379,7 @@ export default function PortfolioPage() {
                   />
                 ) : projects.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {projects.map((project) => (
+                    {projects.map((project: any) => (
                       <ProjectCard key={project.id} {...project} />
                     ))}
                   </div>
@@ -253,6 +392,7 @@ export default function PortfolioPage() {
                     actionHref="/dashboard/create/project"
                   />
                 )}
+                </div>
               </div>
             </div>
           </div>

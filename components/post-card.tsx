@@ -12,7 +12,7 @@ import { ScrollArea } from "./ui/scroll-area"
 import { Skeleton } from "./ui/skeleton"
 import { useLikePostMutation, useUnlikePostMutation, useGetPostCommentsQuery, useAddPostCommentMutation, useDeletePostMutation } from "@/lib/store/api"
 import { AuthService } from "@/lib/services/authService"
-import { formatDistanceToNow } from "date-fns"
+import { formatDistanceToNow, format } from "date-fns"
 import Image from "next/image"
 import { toast } from "sonner"
 import { Trash2, MoreVertical } from "lucide-react"
@@ -183,8 +183,35 @@ export function PostCard({
   const normalizedAppreciations = initialAppreciations ?? (Array.isArray(likesArray) ? likesArray.length : 0)
   const normalizedComments = initialComments ?? 0
   
-  // Normalize timestamp
-  const normalizedTimestamp = timestamp || (createdAt ? formatDistanceToNow(new Date(createdAt), { addSuffix: true }) : 'Recently')
+  // Normalize timestamp - show relative time for recent posts, date for older ones
+  const normalizedTimestamp = useMemo(() => {
+    // Use timestamp or createdAt, whichever is available
+    const dateString = timestamp || createdAt
+    if (!dateString) return 'Recently'
+    
+    // Parse the date (handles both ISO strings and other formats)
+    const postDate = new Date(dateString)
+    
+    // Check if date is valid
+    if (isNaN(postDate.getTime())) return 'Recently'
+    
+    const now = new Date()
+    const diffInHours = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60)
+    
+    // Show relative time if less than 24 hours ago
+    if (diffInHours < 24) {
+      return formatDistanceToNow(postDate, { addSuffix: true })
+    }
+    
+    // Show date format for older posts: "Jan 15, 2024" or "Jan 15, 2024 at 3:45 PM"
+    if (diffInHours < 24 * 7) {
+      // Within a week, show day and time
+      return format(postDate, "MMM d 'at' h:mm a")
+    } else {
+      // Older than a week, show just the date
+      return format(postDate, "MMM d, yyyy")
+    }
+  }, [timestamp, createdAt])
 
   // Check if current user has liked the post (initial check from props)
   const initialIsLiked = useMemo(() => {

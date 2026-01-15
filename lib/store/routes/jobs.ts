@@ -5,19 +5,36 @@ export interface Job {
   _id: string
   title: string
   description: string
-  company: string
+  company?: string // Optional - may not be present
   location: string
-  type: 'full-time' | 'part-time' | 'contract' | 'internship'
+  type?: 'full-time' | 'part-time' | 'contract' | 'internship' // Legacy field
+  jobType?: 'full-time' | 'part-time' | 'contract' | 'internship' // New field from API
+  salaryRange?: string // e.g., "50k-70k", "Negotiable"
   salary?: {
     min: number
     max: number
     currency: string
   }
-  requirements: string[]
-  benefits: string[]
-  postedBy: string
-  applications: string[]
-  isActive: boolean
+  requirements?: string[] | string // Can be array or string
+  benefits?: string[] | string // Can be array or string
+  postedBy?: string // Legacy field
+  postedById?: {
+    id: string
+    username: string
+    profilePictureUrl?: string | null
+  }
+  postedByType?: 'User' | 'Studio'
+  studio?: {
+    _id: string
+    name: string
+    logoUrl?: string
+    description?: string
+    website?: string
+  }
+  applicationLink?: string | null
+  expiresAt?: string | null
+  applications?: string[]
+  isActive?: boolean
   createdAt: string
   updatedAt: string
 }
@@ -27,12 +44,9 @@ export interface CreateJobRequest {
   description: string
   company: string
   location: string
-  type: 'full-time' | 'part-time' | 'contract' | 'internship'
-  salary?: {
-    min: number
-    max: number
-    currency: string
-  }
+  jobType: 'full-time' | 'part-time' | 'contract' | 'internship'
+  salaryRange: string // e.g., "50k-70k", "Negotiable", "$80k-$120k"
+  postedByType: 'User' | 'Studio'
   requirements: string[]
   benefits: string[]
 }
@@ -105,4 +119,21 @@ export const jobEndpoints = (builder: EndpointBuilder<any, any, any>) => ({
     }),
     invalidatesTags: ['Job'],
   }),
+
+  // Job applications
+  applyToJob: builder.mutation<ApiResponse<{ message: string }>, { id: string; data: JobApplicationRequest }>({
+    query: ({ id, data }) => ({
+      url: `/jobs/${id}/apply`,
+      method: 'POST',
+      body: data,
+    }),
+    invalidatesTags: (result: any, error: any, { id }: { id: string }) => [{ type: 'Job', id }],
+  }),
 })
+
+export interface JobApplicationRequest {
+  coverLetter: string
+  resumeUrl?: string
+  portfolioUrl?: string
+  additionalInfo?: string
+}
